@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: Logistica API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+security:
+  - bearerAuth: []
+paths:
+  /api/rutas/planificar:
+    post:
+      summary: Planificar ruta y estimar tramos
+      x-roles: [OPERADOR, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlanRutaRequest' }
+      responses:
+        '201':
+          description: creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ruta' }
+  /api/tramos/{id}/asignar-camion:
+    post:
+      summary: Asignar camión a tramo
+      x-roles: [OPERADOR, ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [camionId]
+              properties:
+                camionId: { type: integer }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tramo' }
+  /api/tramos/{id}/iniciar:
+    post:
+      summary: Iniciar tramo
+      x-roles: [TRANSPORTISTA, OPERADOR, ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: ok
+  /api/tramos/{id}/finalizar:
+    post:
+      summary: Finalizar tramo y calcular costo
+      x-roles: [TRANSPORTISTA, OPERADOR, ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: ok
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PlanRutaRequest:
+      type: object
+      required: [solicitudExternaId, puntos]
+      properties:
+        solicitudExternaId: { type: integer }
+        puntos:
+          type: array
+          items:
+            type: object
+            properties:
+              depositoId: { type: integer, nullable: true }
+              lat: { type: number, format: double, nullable: true }
+              lng: { type: number, format: double, nullable: true }
+    Ruta:
+      type: object
+      properties:
+        id: { type: integer }
+        solicitudExternaId: { type: integer }
+        estado: { type: string, enum: [PROPUESTA, ASIGNADA, EN_EJECUCION, FINALIZADA, CANCELADA] }
+        tramos:
+          type: array
+          items: { $ref: '#/components/schemas/Tramo' }
+    Tramo:
+      type: object
+      properties:
+        id: { type: integer }
+        rutaId: { type: integer }
+        secuencia: { type: integer }
+        tipo: { type: string, enum: [ORIGEN_DEPOSITO, DEPOSITO_DEPOSITO, DEPOSITO_DESTINO, ORIGEN_DESTINO] }
+        estado: { type: string, enum: [ESTIMADO, ASIGNADO, INICIADO, FINALIZADO] }
+        origenDepositoId: { type: integer, nullable: true }
+        destinoDepositoId: { type: integer, nullable: true }
+        origenLat: { type: number, format: double, nullable: true }
+        origenLng: { type: number, format: double, nullable: true }
+        destinoLat: { type: number, format: double, nullable: true }
+        destinoLng: { type: number, format: double, nullable: true }
+        distanciaKm: { type: number, format: double, nullable: true }
+        costoAproximado: { type: number, format: double, nullable: true }
+        costoReal: { type: number, format: double, nullable: true }

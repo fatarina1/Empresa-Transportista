@@ -1,0 +1,79 @@
+package ar.edu.tpi.seguimiento.entities;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "solicitudes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Solicitud {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(length = 40, nullable = false, unique = true)
+    private String numero;
+
+    @Column(name = "cliente_id", nullable = false)
+    private Long clienteId;
+
+    @Column(name = "contenedor_id", nullable = false)
+    private Long contenedorId;
+
+    // `Ubicacion` is owned by the logistica microservice. To avoid duplicating
+    // entity classes across microservices, we store foreign keys here and
+    // resolve the full `Ubicacion` via the logistica service API when needed.
+    @Column(name = "origen_id", nullable = false)
+    private Long origenId;
+
+    @Column(name = "destino_id", nullable = false)
+    private Long destinoId;
+
+    @Column(name = "estado", length = 30)
+    private String estado;
+
+    @Column(name = "costo_estimado", precision = 14, scale = 2)
+    private Double costoEstimado;
+
+    @Column(name = "tiempo_estimado_min")
+    private Integer tiempoEstimadoMin;
+
+    @Column(name = "costo_final")
+    private Double costoFinal;
+
+    @Column(name = "tiempo_real_min")
+    private Integer tiempoRealMin;
+
+    @Column(name = "observaciones", length = 400)
+    private String observaciones;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // Origen (dirección + lat/long)
+    @Column(name = "origen_direccion", length = 240, nullable = false)
+    private String origenDireccion;
+
+    @Column(name = "origen_latitud", precision = 9, scale = 6, nullable = false)
+    private Double origenLatitud;
+
+    @Column(name = "origen_longitud", precision = 9, scale = 6, nullable = false)
+    private Double origenLongitud;
+
+    // Destino (dirección + lat/long)
+    @Column(name = "destino_direccion", length = 240, nullable = false)
+    private String destinoDireccion;
+
+    @Column(name = "destino_latitud", precision = 9, scale = 6, nullable = false)
+    private Double destinoLatitud;
+
+    @Column(name = "destino_longitud", precision = 9, scale = 6, nullable = false)
+    private Double destinoLongitud;
+}

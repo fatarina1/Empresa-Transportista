@@ -1,0 +1,73 @@
+// ======================================================
+// Microservicio: Operaciones Seguimiento
+// ======================================================
+
+Enum request_status {
+  BORRADOR
+  PROGRAMADA
+  EN_TRANSITO
+  ENTREGADA
+  CANCELADA
+}
+
+Table clientes {
+  id                integer [pk, increment]
+  nombre            varchar(120) [not null]
+  email             varchar(160) [not null, unique]
+  telefono          varchar(40)
+  documento         varchar(50)
+  direccion         varchar(240)
+  created_at        timestamp [default: `now()`]
+}
+
+Table contenedores {
+  id                integer [pk, increment]
+  cliente_id        integer [not null, ref: > clientes.id]
+  identificacion    varchar(80) [not null, unique]
+  peso_kg           decimal(10,2) [not null]
+  volumen_m3        decimal(10,3) [not null]
+  largo_m           decimal(6,3)
+  ancho_m           decimal(6,3)
+  alto_m            decimal(6,3)
+  descripcion       varchar(240)
+  created_at        timestamp [default: `now()`]
+}
+
+Table solicitudes {
+  id                        integer [pk, increment]
+  numero                    varchar(40)  [not null, unique]
+  cliente_id                integer      [not null, ref: > clientes.id]
+  contenedor_id             integer      [not null, ref: > contenedores.id]
+
+  origen_direccion          varchar(240)  [not null]
+  origen_latitud            decimal(9,6)  [not null]
+  origen_longitud           decimal(9,6)  [not null]
+
+  destino_direccion         varchar(240)  [not null]
+  destino_latitud           decimal(9,6)  [not null]
+  destino_longitud          decimal(9,6)  [not null]
+
+  costo_estimado            decimal(14,2)
+  tiempo_estimado_min       integer
+  costo_final               decimal(14,2)
+  tiempo_real_min           integer
+
+  observaciones             varchar(400)
+  created_at                timestamp     [default: `now()`]
+
+  Note: 'Solicitud de transporte; estado actual es opcional si lo derivás del historial.'
+}
+
+Table solicitud_cambios_estado {
+  id              integer [pk, increment]
+  solicitud_id    integer         [not null, ref: > solicitudes.id]
+  estado          request_status  [not null]
+  fecha_desde     timestamp       [not null, default: `now()`]
+  fecha_hasta     timestamp       // NULL => vigente
+
+  actor           varchar(120)    // opcional: quién lo cambió
+  origen          varchar(40)     // opcional: API, sistema, transportista
+  detalle         varchar(240)
+
+  Note: 'Intervalos de validez por estado. Máximo un intervalo abierto por solicitud.'
+}
