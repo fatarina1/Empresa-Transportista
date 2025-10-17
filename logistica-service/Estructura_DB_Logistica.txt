@@ -1,0 +1,144 @@
+// ======================================================
+// Microservicio: Operaciones Logísticas
+// ======================================================
+
+Enum tramo_tipo {
+  ORIGEN_DEPOSITO
+  DEPOSITO_DEPOSITO
+  DEPOSITO_DESTINO
+  ORIGEN_DESTINO
+}
+
+Enum tramo_estado {
+  ESTIMADO
+  ASIGNADO
+  INICIADO
+  FINALIZADO
+}
+
+Enum ruta_estado {
+  PROPUESTA
+  ASIGNADA
+  EN_EJECUCION
+  FINALIZADA
+  CANCELADA
+}
+
+// ---------- Ubicaciones ----------
+Table ubicaciones {
+  id                integer [pk, increment]
+  descripcion       varchar(120)
+  direccion         varchar(240)
+  latitud           decimal(9,6) [not null]
+  longitud          decimal(9,6) [not null]
+  created_at        timestamp [default: `now()`]
+
+  Note: 'Cualquier punto geográfico: origen, destino o ubicación de un depósito.'
+}
+
+// ---------- Depósitos ----------
+Table depositos {
+  id                      integer [pk, increment]
+  nombre                  varchar(120) [not null]
+  ubicacion_id            integer [not null, unique, ref: > ubicaciones.id]
+  costo_estadia_diaria    decimal(12,2) [not null]
+  activo                  boolean [default: true]
+  created_at              timestamp [default: `now()`]
+
+  Note: 'Depósitos intermedios con costo de estadía diaria.'
+}
+
+// ---------- Transportistas ----------
+Table transportistas {
+  id              integer [pk, increment]
+  nombre          varchar(120) [not null]
+  telefono        varchar(40)
+  email           varchar(160)
+  activo          boolean [default: true]
+  created_at      timestamp [default: `now()`]
+
+  Note: 'Transportistas o choferes responsables de los camiones.'
+}
+
+// ---------- Camiones ----------
+Table camiones {
+  id                      integer [pk, increment]
+  dominio                 varchar(40) [not null, unique]
+  capacidad_peso_kg       decimal(12,2) [not null]
+  capacidad_volumen_m3    decimal(12,3) [not null]
+  costo_km_base           decimal(12,2) [not null]
+  consumo_promedio_l_km   decimal(8,4) [not null]
+  disponible              boolean [default: true]
+  transportista_id        integer [ref: > transportistas.id]
+  created_at              timestamp [default: `now()`]
+
+  Note: 'Camiones con su chofer asignado, capacidades y costos.'
+}
+
+// ---------- Rutas ----------
+Table rutas {
+  id                      integer [pk, increment]
+  solicitud_externa_id    integer [not null] // referencia al id de solicitud (MS externo)
+  estado                  ruta_estado [default: 'PROPUESTA']
+  cantidad_tramos         integer [default: 0]
+  cantidad_depositos      integer [default: 0]
+  observaciones           varchar(400)
+  created_at              timestamp [default: `now()`]
+
+  Note: 'Rutas planificadas que agrupan uno o varios tramos asociados a una solicitud.'
+}
+
+// ---------- Tramos ----------
+Table tramos {
+  id                      integer [pk, increment]
+  ruta_id                 integer [not null, ref: > rutas.id]
+  secuencia               integer [not null]
+  tipo                    tramo_tipo [not null]
+  estado                  tramo_estado [default: 'ESTIMADO']
+
+  origen_deposito_id      integer [ref: > depositos.id]
+  destino_deposito_id     integer [ref: > depositos.id]
+  origen_latitud          decimal(9,6)
+  origen_longitud         decimal(9,6)
+  destino_latitud         decimal(9,6)
+  destino_longitud        decimal(9,6)
+
+  distancia_km            decimal(12,3)
+  costo_aproximado        decimal(14,2)
+  costo_real              decimal(14,2)
+
+  fecha_inicio_estimada   timestamp
+  fecha_fin_estimada      timestamp
+  fecha_inicio_real       timestamp
+  fecha_fin_real          timestamp
+
+  camion_id               integer [ref: > camiones.id]
+  created_at              timestamp [default: `now()`]
+
+  Note: 'Cada tramo representa un trayecto entre dos puntos dentro de una ruta.'
+}
+
+// ---------- Parámetros / Tarifas ----------
+Table parametros_tarifas {
+  id                            integer [pk, increment]
+  valor_litro_combustible       decimal(10,2) [not null]
+  consumo_general_promedio_l_km decimal(8,4) [not null]
+  cargo_gestion_por_tramo       decimal(10,2) [default: 0]
+  vigente_desde                 date [default: `current_date`]
+  vigente_hasta                 date
+  created_at                    timestamp [default: `now()`]
+
+  Note: 'Parámetros generales usados para el cálculo de costos.'
+}
+
+// ---------- Rangos por Volumen ----------
+Table rangos_volumen_km_base {
+  id                integer [pk, increment]
+  volumen_min_m3    decimal(10,3) [not null]
+  volumen_max_m3    decimal(10,3) [not null]
+  costo_km_base     decimal(12,2) [not null]
+  vigente_desde     date [default: `current_date`]
+  vigente_hasta     date
+
+  Note: 'Tabla opcional para definir costos base por km según volumen del contenedor.'
+}

@@ -1,0 +1,131 @@
+openapi: 3.0.3
+info:
+  title: Seguimiento API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081
+security:
+  - bearerAuth: []
+paths:
+  /api/solicitudes:
+    post:
+      summary: Crear solicitud
+      x-roles: [CLIENTE, OPERADOR, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SolicitudCreate' }
+      responses:
+        '201':
+          description: creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Solicitud' }
+    get:
+      summary: Listar solicitudes
+      x-roles: [OPERADOR, ADMIN]
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Solicitud' }
+  /api/solicitudes/{id}:
+    get:
+      summary: Detalle de solicitud
+      x-roles: [CLIENTE, OPERADOR, ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Solicitud' }
+  /api/solicitudes/{id}/estado:
+    patch:
+      summary: Cambiar estado de la solicitud
+      x-roles: [OPERADOR, ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { $ref: '#/components/schemas/RequestStatus' }
+                detalle: { type: string }
+      responses:
+        '200':
+          description: ok
+  /api/solicitudes/{id}/tracking:
+    get:
+      summary: Timeline de estados
+      x-roles: [CLIENTE, OPERADOR, ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CambioEstadoSolicitud' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RequestStatus:
+      type: string
+      enum: [BORRADOR, PROGRAMADA, EN_TRANSITO, ENTREGADA, CANCELADA]
+    SolicitudCreate:
+      type: object
+      required: [numero, clienteId, contenedorId, origenDireccion, origenLat, origenLng, destinoDireccion, destinoLat, destinoLng]
+      properties:
+        numero: { type: string }
+        clienteId: { type: integer }
+        contenedorId: { type: integer }
+        origenDireccion: { type: string }
+        origenLat: { type: number, format: double }
+        origenLng: { type: number, format: double }
+        destinoDireccion: { type: string }
+        destinoLat: { type: number, format: double }
+        destinoLng: { type: number, format: double }
+    Solicitud:
+      type: object
+      properties:
+        id: { type: integer }
+        numero: { type: string }
+        clienteId: { type: integer }
+        contenedorId: { type: integer }
+        estadoActual: { $ref: '#/components/schemas/RequestStatus' }
+        costoEstimado: { type: number, format: double }
+        tiempoEstimadoMin: { type: integer }
+        costoFinal: { type: number, format: double }
+        tiempoRealMin: { type: integer }
+    CambioEstadoSolicitud:
+      type: object
+      properties:
+        estado: { $ref: '#/components/schemas/RequestStatus' }
+        fechaDesde: { type: string, format: date-time }
+        fechaHasta: { type: string, format: date-time, nullable: true }
