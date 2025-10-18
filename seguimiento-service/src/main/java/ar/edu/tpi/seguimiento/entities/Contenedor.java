@@ -3,6 +3,7 @@ package ar.edu.tpi.seguimiento.entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "contenedores")
@@ -19,19 +20,19 @@ public class Contenedor {
     private String identificacion;
 
     @Column(name = "peso_kg", nullable = false, precision = 10, scale = 2)
-    private Double pesoKg;
+    private BigDecimal pesoKg;
 
     @Column(name = "volumen_m3", nullable = false, precision = 10, scale = 3)
-    private Double volumenM3;
+    private BigDecimal volumenM3;
 
-    @Column(name = "largo_m")
-    private Double largoM;
+    @Column(name = "largo_m", precision = 10, scale = 2)
+    private BigDecimal largoM;
 
-    @Column(name = "ancho_m")
-    private Double anchoM;
+    @Column(name = "ancho_m", precision = 10, scale = 2)
+    private BigDecimal anchoM;
 
-    @Column(name = "alto_m")
-    private Double altoM;
+    @Column(name = "alto_m", precision = 10, scale = 2)
+    private BigDecimal altoM;
 
     @Column(length = 240)
     private String descripcion;

@@ -10,7 +10,7 @@ paths:
   /api/rutas/planificar:
     post:
       summary: Planificar ruta y estimar tramos
-      x-roles: [OPERADOR, ADMIN]
+      x-roles: [OPERADOR]
       requestBody:
         required: true
         content:
@@ -25,7 +25,7 @@ paths:
   /api/tramos/{id}/asignar-camion:
     post:
       summary: Asignar camión a tramo
-      x-roles: [OPERADOR, ADMIN]
+      x-roles: [OPERADOR]
       parameters:
         - in: path
           name: id
@@ -49,7 +49,7 @@ paths:
   /api/tramos/{id}/iniciar:
     post:
       summary: Iniciar tramo
-      x-roles: [TRANSPORTISTA, OPERADOR, ADMIN]
+      x-roles: [TRANSPORTISTA, OPERADOR]
       parameters:
         - in: path
           name: id
@@ -61,7 +61,7 @@ paths:
   /api/tramos/{id}/finalizar:
     post:
       summary: Finalizar tramo y calcular costo
-      x-roles: [TRANSPORTISTA, OPERADOR, ADMIN]
+      x-roles: [TRANSPORTISTA, OPERADOR]
       parameters:
         - in: path
           name: id
@@ -70,6 +70,449 @@ paths:
       responses:
         '200':
           description: ok
+
+  # Endpoints para Camiones
+  /api/camiones:
+    get:
+      summary: Listar todos los camiones
+      x-roles: [OPERADOR]
+      parameters:
+        - in: query
+          name: disponible
+          schema: { type: boolean }
+          description: Filtrar por disponibilidad
+      responses:
+        '200':
+          description: Lista de camiones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Camion' }
+    post:
+      summary: Crear un nuevo camión
+      x-roles: [OPERADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CamionRequest' }
+      responses:
+        '201':
+          description: Camión creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Camion' }
+
+  /api/camiones/{id}:
+    get:
+      summary: Obtener un camión por ID
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Camión encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Camion' }
+        '404':
+          description: Camión no encontrado
+    put:
+      summary: Actualizar un camión
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CamionRequest' }
+      responses:
+        '200':
+          description: Camión actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Camion' }
+    delete:
+      summary: Eliminar un camión
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Camión eliminado
+
+  /api/camiones/{id}/disponibilidad:
+    patch:
+      summary: Actualizar disponibilidad del camión
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disponible]
+              properties:
+                disponible: { type: boolean }
+      responses:
+        '200':
+          description: Disponibilidad actualizada
+
+  # Endpoints para Depósitos
+  /api/depositos:
+    get:
+      summary: Listar todos los depósitos
+      x-roles: [OPERADOR]
+      parameters:
+        - in: query
+          name: activo
+          schema: { type: boolean }
+          description: Filtrar por estado activo
+      responses:
+        '200':
+          description: Lista de depósitos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Deposito' }
+    post:
+      summary: Crear un nuevo depósito
+      x-roles: [OPERADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepositoRequest' }
+      responses:
+        '201':
+          description: Depósito creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deposito' }
+
+  /api/depositos/{id}:
+    get:
+      summary: Obtener un depósito por ID
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Depósito encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deposito' }
+        '404':
+          description: Depósito no encontrado
+    put:
+      summary: Actualizar un depósito
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepositoRequest' }
+      responses:
+        '200':
+          description: Depósito actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deposito' }
+    delete:
+      summary: Eliminar un depósito
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Depósito eliminado
+
+  # Endpoints para Ubicaciones
+  /api/ubicaciones:
+    get:
+      summary: Listar todas las ubicaciones
+      x-roles: [OPERADOR]
+      responses:
+        '200':
+          description: Lista de ubicaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Ubicacion' }
+    post:
+      summary: Crear una nueva ubicación
+      x-roles: [OPERADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UbicacionRequest' }
+      responses:
+        '201':
+          description: Ubicación creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ubicacion' }
+
+  /api/ubicaciones/{id}:
+    get:
+      summary: Obtener una ubicación por ID
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Ubicación encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ubicacion' }
+        '404':
+          description: Ubicación no encontrada
+    put:
+      summary: Actualizar una ubicación
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UbicacionRequest' }
+      responses:
+        '200':
+          description: Ubicación actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ubicacion' }
+    delete:
+      summary: Eliminar una ubicación
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Ubicación eliminada
+
+  # Endpoints para Tarifas de Volumen
+  /api/tarifas-volumen:
+    get:
+      summary: Listar todas las tarifas de volumen
+      x-roles: [OPERADOR]
+      responses:
+        '200':
+          description: Lista de tarifas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TarifaVolumen' }
+    post:
+      summary: Crear una nueva tarifa de volumen
+      x-roles: [OPERADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TarifaVolumenRequest' }
+      responses:
+        '201':
+          description: Tarifa creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TarifaVolumen' }
+
+  /api/tarifas-volumen/{id}:
+    get:
+      summary: Obtener una tarifa por ID
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Tarifa encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TarifaVolumen' }
+    put:
+      summary: Actualizar una tarifa
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TarifaVolumenRequest' }
+      responses:
+        '200':
+          description: Tarifa actualizada
+    delete:
+      summary: Eliminar una tarifa
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Tarifa eliminada
+
+  /api/tarifas-volumen/calcular:
+    get:
+      summary: Calcular tarifa por volumen
+      x-roles: [OPERADOR]
+      parameters:
+        - in: query
+          name: volumenM3
+          required: true
+          schema: { type: number }
+      responses:
+        '200':
+          description: Tarifa calculada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TarifaVolumen' }
+
+  # Endpoints para Rutas
+  /api/rutas:
+    get:
+      summary: Listar todas las rutas
+      x-roles: [OPERADOR]
+      parameters:
+        - in: query
+          name: estado
+          schema: { type: string, enum: [PROPUESTA, ASIGNADA, EN_EJECUCION, FINALIZADA, CANCELADA] }
+        - in: query
+          name: solicitudExternaId
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Lista de rutas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Ruta' }
+
+  /api/rutas/{id}:
+    get:
+      summary: Obtener una ruta por ID
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Ruta encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ruta' }
+        '404':
+          description: Ruta no encontrada
+
+  /api/rutas/{id}/estado:
+    patch:
+      summary: Actualizar estado de la ruta
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [PROPUESTA, ASIGNADA, EN_EJECUCION, FINALIZADA, CANCELADA] }
+      responses:
+        '200':
+          description: Estado actualizado
+
+  /api/rutas/{id}/tramos:
+    get:
+      summary: Obtener todos los tramos de una ruta
+      x-roles: [OPERADOR, TRANSPORTISTA]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Lista de tramos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Tramo' }
+
+  # Endpoints para Tramos
+  /api/tramos/{id}:
+    get:
+      summary: Obtener un tramo por ID
+      x-roles: [OPERADOR, TRANSPORTISTA]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Tramo encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tramo' }
 
 components:
   securitySchemes:
@@ -117,3 +560,88 @@ components:
         distanciaKm: { type: number, format: double, nullable: true }
         costoAproximado: { type: number, format: double, nullable: true }
         costoReal: { type: number, format: double, nullable: true }
+
+    # Schemas para Camion
+    Camion:
+      type: object
+      properties:
+        id: { type: integer }
+        dominio: { type: string }
+        capacidadPesoKg: { type: number, format: double }
+        capacidadVolumenM3: { type: number, format: double }
+        costoKmBase: { type: number, format: double }
+        consumoPromedioLitrosKm: { type: number, format: double }
+        disponible: { type: boolean }
+        transportistaId: { type: integer, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    CamionRequest:
+      type: object
+      required: [dominio, capacidadPesoKg, capacidadVolumenM3, costoKmBase, consumoPromedioLitrosKm, disponible]
+      properties:
+        dominio: { type: string, maxLength: 40 }
+        capacidadPesoKg: { type: number, format: double }
+        capacidadVolumenM3: { type: number, format: double }
+        costoKmBase: { type: number, format: double }
+        consumoPromedioLitrosKm: { type: number, format: double }
+        disponible: { type: boolean }
+        transportistaId: { type: integer, nullable: true }
+
+    # Schemas para Deposito
+    Deposito:
+      type: object
+      properties:
+        id: { type: integer }
+        nombre: { type: string }
+        ubicacion: { $ref: '#/components/schemas/Ubicacion' }
+        costoEstadiaDiaria: { type: number, format: double }
+        activo: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    DepositoRequest:
+      type: object
+      required: [nombre, ubicacionId, costoEstadiaDiaria, activo]
+      properties:
+        nombre: { type: string, maxLength: 120 }
+        ubicacionId: { type: integer }
+        costoEstadiaDiaria: { type: number, format: double }
+        activo: { type: boolean }
+
+    # Schemas para Ubicacion
+    Ubicacion:
+      type: object
+      properties:
+        id: { type: integer }
+        descripcion: { type: string }
+        direccion: { type: string }
+        latitud: { type: number, format: double }
+        longitud: { type: number, format: double }
+        notas: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    UbicacionRequest:
+      type: object
+      required: [latitud, longitud]
+      properties:
+        descripcion: { type: string, maxLength: 120 }
+        direccion: { type: string, maxLength: 240 }
+        latitud: { type: number, format: double }
+        longitud: { type: number, format: double }
+        notas: { type: string }
+
+    # Schemas para TarifaVolumen
+    TarifaVolumen:
+      type: object
+      properties:
+        id: { type: integer }
+        volumenMinM3: { type: number }
+        volumenMaxM3: { type: number }
+        costoKmBase: { type: number }
+
+    TarifaVolumenRequest:
+      type: object
+      required: [volumenMinM3, volumenMaxM3, costoKmBase]
+      properties:
+        volumenMinM3: { type: number }
+        volumenMaxM3: { type: number }
+        costoKmBase: { type: number }

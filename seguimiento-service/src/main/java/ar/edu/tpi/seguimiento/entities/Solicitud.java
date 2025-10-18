@@ -3,6 +3,8 @@ package ar.edu.tpi.seguimiento.entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "solicitudes")
@@ -37,13 +39,13 @@ public class Solicitud {
     private String estado;
 
     @Column(name = "costo_estimado", precision = 14, scale = 2)
-    private Double costoEstimado;
+    private BigDecimal costoEstimado;
 
     @Column(name = "tiempo_estimado_min")
     private Integer tiempoEstimadoMin;
 
-    @Column(name = "costo_final")
-    private Double costoFinal;
+    @Column(name = "costo_final", precision = 14, scale = 2)
+    private BigDecimal costoFinal;
 
     @Column(name = "tiempo_real_min")
     private Integer tiempoRealMin;
@@ -61,19 +63,20 @@ public class Solicitud {
     @Column(name = "origen_direccion", length = 240, nullable = false)
     private String origenDireccion;
 
+
     @Column(name = "origen_latitud", precision = 9, scale = 6, nullable = false)
-    private Double origenLatitud;
+    private BigDecimal origenLatitud;
 
     @Column(name = "origen_longitud", precision = 9, scale = 6, nullable = false)
-    private Double origenLongitud;
+    private BigDecimal origenLongitud;
 
     // Destino (dirección + lat/long)
     @Column(name = "destino_direccion", length = 240, nullable = false)
     private String destinoDireccion;
 
     @Column(name = "destino_latitud", precision = 9, scale = 6, nullable = false)
-    private Double destinoLatitud;
+    private BigDecimal destinoLatitud;
 
     @Column(name = "destino_longitud", precision = 9, scale = 6, nullable = false)
-    private Double destinoLongitud;
+    private BigDecimal destinoLongitud;
 }

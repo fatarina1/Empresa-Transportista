@@ -10,7 +10,7 @@ paths:
   /api/solicitudes:
     post:
       summary: Crear solicitud
-      x-roles: [CLIENTE, OPERADOR, ADMIN]
+      x-roles: [CLIENTE, OPERADOR]
       requestBody:
         required: true
         content:
@@ -24,7 +24,7 @@ paths:
               schema: { $ref: '#/components/schemas/Solicitud' }
     get:
       summary: Listar solicitudes
-      x-roles: [OPERADOR, ADMIN]
+      x-roles: [OPERADOR]
       responses:
         '200':
           description: ok
@@ -36,7 +36,7 @@ paths:
   /api/solicitudes/{id}:
     get:
       summary: Detalle de solicitud
-      x-roles: [CLIENTE, OPERADOR, ADMIN]
+      x-roles: [CLIENTE, OPERADOR]
       parameters:
         - in: path
           name: id
@@ -51,7 +51,7 @@ paths:
   /api/solicitudes/{id}/estado:
     patch:
       summary: Cambiar estado de la solicitud
-      x-roles: [OPERADOR, ADMIN]
+      x-roles: [OPERADOR]
       parameters:
         - in: path
           name: id
@@ -73,7 +73,7 @@ paths:
   /api/solicitudes/{id}/tracking:
     get:
       summary: Timeline de estados
-      x-roles: [CLIENTE, OPERADOR, ADMIN]
+      x-roles: [CLIENTE, OPERADOR]
       parameters:
         - in: path
           name: id
@@ -87,6 +87,196 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/CambioEstadoSolicitud' }
+
+  # Endpoints para Clientes
+  /api/clientes:
+    get:
+      summary: Listar todos los clientes
+      x-roles: [OPERADOR]
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Cliente' }
+    post:
+      summary: Crear un nuevo cliente
+      x-roles: [OPERADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClienteRequest' }
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cliente' }
+
+  /api/clientes/{id}:
+    get:
+      summary: Obtener un cliente por ID
+      x-roles: [CLIENTE, OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cliente' }
+        '404':
+          description: Cliente no encontrado
+    put:
+      summary: Actualizar un cliente
+      x-roles: [CLIENTE, OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClienteRequest' }
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cliente' }
+    delete:
+      summary: Eliminar un cliente
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Cliente eliminado
+
+  /api/clientes/{id}/solicitudes:
+    get:
+      summary: Obtener todas las solicitudes de un cliente
+      x-roles: [CLIENTE, OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Lista de solicitudes del cliente
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Solicitud' }
+
+  # Endpoints para Contenedores
+  /api/contenedores:
+    get:
+      summary: Listar todos los contenedores
+      x-roles: [OPERADOR]
+      parameters:
+        - in: query
+          name: clienteId
+          schema: { type: integer }
+          description: Filtrar por cliente
+      responses:
+        '200':
+          description: Lista de contenedores
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Contenedor' }
+
+  /api/contenedores/pendientes:
+    get:
+      summary: Listar contenedores pendientes de entrega
+      x-roles: [OPERADOR]
+      description: Muestra contenedores cuyas solicitudes no están finalizadas (BORRADOR, PROGRAMADA, EN_TRANSITO)
+      responses:
+        '200':
+          description: Lista de contenedores pendientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Contenedor' }
+
+    post:
+      summary: Crear un nuevo contenedor
+      x-roles: [CLIENTE, OPERADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContenedorRequest' }
+      responses:
+        '201':
+          description: Contenedor creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contenedor' }
+
+  /api/contenedores/{id}:
+    get:
+      summary: Obtener un contenedor por ID
+      x-roles: [CLIENTE, OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Contenedor encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contenedor' }
+        '404':
+          description: Contenedor no encontrado
+    put:
+      summary: Actualizar un contenedor
+      x-roles: [CLIENTE, OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContenedorRequest' }
+      responses:
+        '200':
+          description: Contenedor actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contenedor' }
+    delete:
+      summary: Eliminar un contenedor
+      x-roles: [OPERADOR]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Contenedor eliminado
 
 components:
   securitySchemes:
@@ -129,3 +319,53 @@ components:
         estado: { $ref: '#/components/schemas/RequestStatus' }
         fechaDesde: { type: string, format: date-time }
         fechaHasta: { type: string, format: date-time, nullable: true }
+
+    # Schemas para Cliente
+    Cliente:
+      type: object
+      properties:
+        id: { type: integer }
+        nombre: { type: string }
+        email: { type: string }
+        telefono: { type: string }
+        documento: { type: string }
+        direccion: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    ClienteRequest:
+      type: object
+      required: [nombre, email]
+      properties:
+        nombre: { type: string, maxLength: 120 }
+        email: { type: string, maxLength: 160 }
+        telefono: { type: string, maxLength: 40 }
+        documento: { type: string, maxLength: 50 }
+        direccion: { type: string, maxLength: 240 }
+
+    # Schemas para Contenedor
+    Contenedor:
+      type: object
+      properties:
+        id: { type: integer }
+        identificacion: { type: string }
+        pesoKg: { type: number }
+        volumenM3: { type: number }
+        largoM: { type: number }
+        anchoM: { type: number }
+        altoM: { type: number }
+        descripcion: { type: string }
+        clienteId: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    ContenedorRequest:
+      type: object
+      required: [identificacion, pesoKg, volumenM3, clienteId]
+      properties:
+        identificacion: { type: string, maxLength: 80 }
+        pesoKg: { type: number }
+        volumenM3: { type: number }
+        largoM: { type: number }
+        anchoM: { type: number }
+        altoM: { type: number }
+        descripcion: { type: string, maxLength: 240 }
+        clienteId: { type: integer }
