@@ -11,6 +11,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 public class Application {
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
-        System.out.println("Swagger UI: http://localhost:8080/swagger-ui/index.html");
+        System.out.println("Swagger UI: http://localhost:8082/swagger-ui/index.html");
     }
 }
