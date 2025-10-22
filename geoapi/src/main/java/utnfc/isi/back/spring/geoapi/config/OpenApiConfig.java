@@ -1,4 +1,4 @@
-package main.java.utnfc.isi.back.spring.geoapi.config;
+package utnfc.isi.back.spring.geoapi.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;

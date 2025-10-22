@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+google:
+  maps:
+    apikey: AIzaSyDH5W4sAjFgqLAY3ZUMzZVHD7PjJXbFzD8
+
+#Para referenciarlo: @Value("${google.maps.apikey}")
