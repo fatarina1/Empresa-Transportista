@@ -9,6 +9,7 @@ security:
 paths:
   /api/rutas/planificar:
     post:
+      tags: [Rutas]
       summary: Planificar ruta y estimar tramos
       x-roles: [OPERADOR]
       requestBody:
@@ -24,6 +25,7 @@ paths:
               schema: { $ref: '#/components/schemas/Ruta' }
   /api/tramos/{id}/asignar-camion:
     post:
+      tags: [Tramos]
       summary: Asignar camión a tramo
       x-roles: [OPERADOR]
       parameters:
@@ -48,6 +50,7 @@ paths:
               schema: { $ref: '#/components/schemas/Tramo' }
   /api/tramos/{id}/iniciar:
     post:
+      tags: [Tramos]
       summary: Iniciar tramo
       x-roles: [TRANSPORTISTA, OPERADOR]
       parameters:
@@ -60,6 +63,7 @@ paths:
           description: ok
   /api/tramos/{id}/finalizar:
     post:
+      tags: [Tramos]
       summary: Finalizar tramo y calcular costo
       x-roles: [TRANSPORTISTA, OPERADOR]
       parameters:
@@ -74,6 +78,7 @@ paths:
   # Endpoints para Camiones
   /api/camiones:
     get:
+      tags: [Camiones]
       summary: Listar todos los camiones
       x-roles: [OPERADOR]
       parameters:
@@ -90,6 +95,7 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Camion' }
     post:
+      tags: [Camiones]
       summary: Crear un nuevo camión
       x-roles: [OPERADOR]
       requestBody:
@@ -106,6 +112,7 @@ paths:
 
   /api/camiones/{id}:
     get:
+      tags: [Camiones]
       summary: Obtener un camión por ID
       x-roles: [OPERADOR]
       parameters:
@@ -122,6 +129,7 @@ paths:
         '404':
           description: Camión no encontrado
     put:
+      tags: [Camiones]
       summary: Actualizar un camión
       x-roles: [OPERADOR]
       parameters:
@@ -141,6 +149,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Camion' }
     delete:
+      tags: [Camiones]
       summary: Eliminar un camión
       x-roles: [OPERADOR]
       parameters:
@@ -154,6 +163,7 @@ paths:
 
   /api/camiones/{id}/disponibilidad:
     patch:
+      tags: [Camiones]
       summary: Actualizar disponibilidad del camión
       x-roles: [OPERADOR]
       parameters:
@@ -177,6 +187,7 @@ paths:
   # Endpoints para Depósitos
   /api/depositos:
     get:
+      tags: [Depositos]
       summary: Listar todos los depósitos
       x-roles: [OPERADOR]
       parameters:
@@ -193,6 +204,7 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Deposito' }
     post:
+      tags: [Depositos]
       summary: Crear un nuevo depósito
       x-roles: [OPERADOR]
       requestBody:
@@ -209,6 +221,7 @@ paths:
 
   /api/depositos/{id}:
     get:
+      tags: [Depositos]
       summary: Obtener un depósito por ID
       x-roles: [OPERADOR]
       parameters:
@@ -225,6 +238,7 @@ paths:
         '404':
           description: Depósito no encontrado
     put:
+      tags: [Depositos]
       summary: Actualizar un depósito
       x-roles: [OPERADOR]
       parameters:
@@ -244,6 +258,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Deposito' }
     delete:
+      tags: [Depositos]
       summary: Eliminar un depósito
       x-roles: [OPERADOR]
       parameters:
@@ -258,6 +273,7 @@ paths:
   # Endpoints para Ubicaciones
   /api/ubicaciones:
     get:
+      tags: [Ubicaciones]
       summary: Listar todas las ubicaciones
       x-roles: [OPERADOR]
       responses:
@@ -269,6 +285,7 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Ubicacion' }
     post:
+      tags: [Ubicaciones]
       summary: Crear una nueva ubicación
       x-roles: [OPERADOR]
       requestBody:
@@ -285,6 +302,7 @@ paths:
 
   /api/ubicaciones/{id}:
     get:
+      tags: [Ubicaciones]
       summary: Obtener una ubicación por ID
       x-roles: [OPERADOR]
       parameters:
@@ -301,6 +319,7 @@ paths:
         '404':
           description: Ubicación no encontrada
     put:
+      tags: [Ubicaciones]
       summary: Actualizar una ubicación
       x-roles: [OPERADOR]
       parameters:
@@ -320,6 +339,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Ubicacion' }
     delete:
+      tags: [Ubicaciones]
       summary: Eliminar una ubicación
       x-roles: [OPERADOR]
       parameters:
@@ -334,6 +354,7 @@ paths:
   # Endpoints para Tarifas de Volumen
   /api/tarifas-volumen:
     get:
+      tags: [Tarifas Volumen]
       summary: Listar todas las tarifas de volumen
       x-roles: [OPERADOR]
       responses:
@@ -345,6 +366,7 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/TarifaVolumen' }
     post:
+      tags: [Tarifas Volumen]
       summary: Crear una nueva tarifa de volumen
       x-roles: [OPERADOR]
       requestBody:
@@ -361,6 +383,7 @@ paths:
 
   /api/tarifas-volumen/{id}:
     get:
+      tags: [Tarifas Volumen]
       summary: Obtener una tarifa por ID
       x-roles: [OPERADOR]
       parameters:
@@ -375,6 +398,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TarifaVolumen' }
     put:
+      tags: [Tarifas Volumen]
       summary: Actualizar una tarifa
       x-roles: [OPERADOR]
       parameters:
@@ -391,6 +415,7 @@ paths:
         '200':
           description: Tarifa actualizada
     delete:
+      tags: [Tarifas Volumen]
       summary: Eliminar una tarifa
       x-roles: [OPERADOR]
       parameters:
@@ -404,6 +429,7 @@ paths:
 
   /api/tarifas-volumen/calcular:
     get:
+      tags: [Tarifas Volumen]
       summary: Calcular tarifa por volumen
       x-roles: [OPERADOR]
       parameters:
@@ -421,6 +447,7 @@ paths:
   # Endpoints para Rutas
   /api/rutas:
     get:
+      tags: [Rutas]
       summary: Listar todas las rutas
       x-roles: [OPERADOR]
       parameters:
@@ -441,6 +468,7 @@ paths:
 
   /api/rutas/{id}:
     get:
+      tags: [Rutas]
       summary: Obtener una ruta por ID
       x-roles: [OPERADOR]
       parameters:
@@ -459,6 +487,7 @@ paths:
 
   /api/rutas/{id}/estado:
     patch:
+      tags: [Rutas]
       summary: Actualizar estado de la ruta
       x-roles: [OPERADOR]
       parameters:
@@ -481,6 +510,7 @@ paths:
 
   /api/rutas/{id}/tramos:
     get:
+      tags: [Rutas]
       summary: Obtener todos los tramos de una ruta
       x-roles: [OPERADOR, TRANSPORTISTA]
       parameters:
@@ -500,6 +530,7 @@ paths:
   # Endpoints para Tramos
   /api/tramos/{id}:
     get:
+      tags: [Tramos]
       summary: Obtener un tramo por ID
       x-roles: [OPERADOR, TRANSPORTISTA]
       parameters:
