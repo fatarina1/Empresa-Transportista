@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/tarifas-volumen")
+@RequestMapping("/tarifas-volumen")
 
 public class TarifaVolumenController {
 

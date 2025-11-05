@@ -50,5 +50,16 @@ public class CamionService {
     public List<Camion> obtenerDisponibles() {
         return camionRepository.findByDisponibleTrue();
     }
+
+    /**
+     * Verifica si hay al menos un camión disponible que pueda transportar
+     * el peso y volumen especificados
+     */
+    public boolean verificarDisponibilidad(Double pesoKg, Double volumenM3) {
+        List<Camion> camionesDisponibles = camionRepository.findByDisponibleTrue();
+        return camionesDisponibles.stream()
+                .anyMatch(c -> c.getCapacidadPesoKg() >= pesoKg && 
+                              c.getCapacidadVolumenM3() >= volumenM3);
+    }
     
 }

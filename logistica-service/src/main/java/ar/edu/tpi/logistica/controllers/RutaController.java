@@ -1,65 +1,90 @@
 package ar.edu.tpi.logistica.controllers;
 
+import ar.edu.tpi.logistica.dto.RutaDTO;
+import ar.edu.tpi.logistica.services.RutaService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ar.edu.tpi.logistica.entities.Ruta;
-import ar.edu.tpi.logistica.repositories.RutaRepository;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/rutas")
-
+@RequestMapping("/rutas")
 public class RutaController {
 
     @Autowired
-    private RutaRepository rutaRepository;
+    private RutaService rutaService;
 
     @GetMapping
-    public List<Ruta> listarTodos() {
-        return rutaRepository.findAll();
+    public ResponseEntity<List<RutaDTO>> listarTodas() {
+        List<RutaDTO> rutas = rutaService.obtenerTodas();
+        return ResponseEntity.ok(rutas);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Ruta> obtenerPorId(@PathVariable Long id) {
-        Optional<Ruta> r = rutaRepository.findById(id);
-        return r.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<RutaDTO> obtenerPorId(@PathVariable Long id) {
+        return rutaService.obtenerPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/solicitud/{solicitudId}")
-    public ResponseEntity<Ruta> obtenerPorSolicitud(@PathVariable Long solicitudId) {
-        Ruta r = rutaRepository.findBySolicitudId(solicitudId);
-        if (r != null) return ResponseEntity.ok(r);
-        return ResponseEntity.notFound().build();
-    }
-
-    @GetMapping("/solicitud-externa/{solicitudExternaId}")
-    public ResponseEntity<Ruta> obtenerPorSolicitudExterna(@PathVariable Long solicitudExternaId) {
-        Ruta r = rutaRepository.findBySolicitudExternaId(solicitudExternaId);
-        if (r != null) return ResponseEntity.ok(r);
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<RutaDTO> obtenerPorSolicitudId(@PathVariable Long solicitudId) {
+        return rutaService.obtenerPorSolicitudId(solicitudId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Ruta> crear(@RequestBody Ruta ruta) {
-        Ruta creado = rutaRepository.save(ruta);
-        return ResponseEntity.ok(creado);
+    public ResponseEntity<RutaDTO> crear(@RequestBody RutaDTO rutaDTO) {
+        try {
+            RutaDTO creada = rutaService.crear(rutaDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(creada);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al crear ruta: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Ruta> actualizar(@PathVariable Long id, @RequestBody Ruta ruta) {
-        if (!rutaRepository.existsById(id)) return ResponseEntity.notFound().build();
-        ruta.setId(id);
-        Ruta actualizado = rutaRepository.save(ruta);
-        return ResponseEntity.ok(actualizado);
+    public ResponseEntity<RutaDTO> actualizar(@PathVariable Long id, @RequestBody RutaDTO rutaDTO) {
+        try {
+            RutaDTO actualizada = rutaService.actualizar(id, rutaDTO);
+            return ResponseEntity.ok(actualizada);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al actualizar ruta: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<Void> cambiarEstado(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        try {
+            String nuevoEstado = body.get("estado");
+            if (nuevoEstado == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            rutaService.cambiarEstado(id, nuevoEstado);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error al cambiar estado: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        if (!rutaRepository.existsById(id)) return ResponseEntity.notFound().build();
-        rutaRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        try {
+            rutaService.eliminar(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

@@ -15,6 +15,9 @@ public class Ubicacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 120, nullable = false)
+    private String nombre;
+
     @Column(length = 120)
     private String descripcion;
 
@@ -26,6 +29,9 @@ public class Ubicacion {
 
     @Column(nullable = false)
     private Double longitud;
+
+    @Column(length = 30)
+    private String tipo; // DEPOSITO, CLIENTE
 
     @Column(columnDefinition = "TEXT")
     private String notas;

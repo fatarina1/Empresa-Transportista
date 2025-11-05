@@ -6,3 +6,5 @@ target/
 *.war
 *.ear
 
+unihelp-backend-main
+service-gitano-stock-main

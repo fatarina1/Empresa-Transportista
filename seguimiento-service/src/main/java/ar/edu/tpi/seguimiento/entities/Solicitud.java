@@ -59,6 +59,12 @@ public class Solicitud {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "fecha_solicitud")
+    private LocalDateTime fechaSolicitud;
+
+    @Column(name = "fecha_entrega")
+    private LocalDateTime fechaEntrega;
+
     // Origen (dirección + lat/long)
     @Column(name = "origen_direccion", length = 240, nullable = false)
     private String origenDireccion;
