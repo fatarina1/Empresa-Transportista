@@ -1,4 +1,4 @@
-package main.java.ar.edu.tpi.transportista.gateway.config;
+package ar.edu.tpi.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
