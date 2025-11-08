@@ -5,7 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO para respuesta de Google Maps / geoapi
+ * DTO para respuesta del servicio GeoAPI.
+ * Coincide exactamente con la estructura del documento oficial.
  */
 @Data
 @NoArgsConstructor
@@ -13,7 +14,6 @@ import lombok.NoArgsConstructor;
 public class DistanciaDTO {
     private String origen;
     private String destino;
-    private Double distanciaKm;
-    private Integer duracionMinutos;
-    private String polilinea; // Encoded polyline para mostrar en mapa
+    private double kilometros;          // Nombre exacto del documento
+    private String duracionTexto;       // String según documento (ej: "2 horas 15 mins")
 }

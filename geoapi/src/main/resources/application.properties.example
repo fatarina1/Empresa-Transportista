@@ -1,0 +1,22 @@
+server.port=8080
+spring.application.name=geoapi
+
+# Springdoc OpenAPI (Swagger UI)
+springdoc.swagger-ui.path=/swagger-ui.html
+
+# Google Maps API Configuration
+# IMPORTANTE: Reemplazar TU_API_KEY_AQUI con tu API Key de Google Maps
+google.maps.apikey=TU_API_KEY_AQUI
+
+# Logging
+logging.level.utnfc.isi.back.spring.geoapi=INFO
+
+# ============================================
+# INSTRUCCIONES:
+# ============================================
+# 1. Copiar este archivo como: application.properties
+# 2. Reemplazar TU_API_KEY_AQUI con tu API Key de Google Maps
+# 3. Para obtener API Key:
+#    - Ir a: https://console.cloud.google.com/
+#    - Habilitar Distance Matrix API
+#    - Crear credenciales > API Key

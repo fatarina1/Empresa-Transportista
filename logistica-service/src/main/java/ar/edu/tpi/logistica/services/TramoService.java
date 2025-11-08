@@ -107,14 +107,16 @@ public class TramoService {
         if (tramo.getOrigenLatitud() != null && tramo.getOrigenLongitud() != null &&
             tramo.getDestinoLatitud() != null && tramo.getDestinoLongitud() != null) {
             try {
-                DistanciaDTO distancia = geoApiClient.calcularDistancia(
-                    tramo.getOrigenLatitud(),
-                    tramo.getOrigenLongitud(),
-                    tramo.getDestinoLatitud(),
-                    tramo.getDestinoLongitud()
-                );
-                tramo.setDistanciaKm(distancia.getDistanciaKm());
-                log.info("Distancia calculada para tramo: {} km", distancia.getDistanciaKm());
+                // Formatear coordenadas como strings para el servicio GeoAPI
+                String origen = tramo.getOrigenLatitud() + "," + tramo.getOrigenLongitud();
+                String destino = tramo.getDestinoLatitud() + "," + tramo.getDestinoLongitud();
+                
+                DistanciaDTO distancia = geoApiClient.calcularDistancia(origen, destino);
+                
+                if (distancia != null) {
+                    tramo.setDistanciaKm(distancia.getKilometros());
+                    log.info("Distancia calculada para tramo: {} km ({})", distancia.getKilometros(), distancia.getDuracionTexto());
+                }
             } catch (Exception e) {
                 log.warn("No se pudo calcular distancia automáticamente: {}", e.getMessage());
             }

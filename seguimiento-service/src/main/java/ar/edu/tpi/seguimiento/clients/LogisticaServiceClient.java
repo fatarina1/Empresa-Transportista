@@ -1,31 +1,40 @@
 package ar.edu.tpi.seguimiento.clients;
 
 import ar.edu.tpi.seguimiento.dto.UbicacionDTO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class LogisticaServiceClient {
 
-    private final RestTemplate restTemplate;
+    private final RestClient.Builder restClientBuilder;
     
     @Value("${logistica.service.url:http://localhost:8082}")
     private String logisticaServiceUrl;
 
-    public LogisticaServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
-
     /**
-     * Obtiene información de una ubicación desde el servicio de logística
+     * Obtiene información de una ubicación desde el servicio de logística.
+     * Utiliza RestClient (Spring 6+) para realizar la petición HTTP.
+     * 
+     * @param ubicacionId ID de la ubicación a consultar
+     * @return UbicacionDTO con los datos de la ubicación
      */
     public UbicacionDTO obtenerUbicacion(Long ubicacionId) {
         try {
-            String url = logisticaServiceUrl + "/api/ubicaciones/" + ubicacionId;
-            return restTemplate.getForObject(url, UbicacionDTO.class);
+            RestClient restClient = restClientBuilder
+                    .baseUrl(logisticaServiceUrl)
+                    .build();
+            
+            return restClient.get()
+                    .uri("/api/ubicaciones/{id}", ubicacionId)
+                    .retrieve()
+                    .body(UbicacionDTO.class);
+                    
         } catch (Exception e) {
             log.error("Error al obtener ubicación {} desde logistica-service", ubicacionId, e);
             return null;
@@ -33,13 +42,25 @@ public class LogisticaServiceClient {
     }
 
     /**
-     * Verifica disponibilidad de camiones para un peso y volumen específico
+     * Verifica disponibilidad de camiones para un peso y volumen específico.
+     * 
+     * @param pesoKg Peso en kilogramos
+     * @param volumenM3 Volumen en metros cúbicos
+     * @return true si hay camiones disponibles, false en caso contrario
      */
     public boolean verificarDisponibilidadCamiones(Double pesoKg, Double volumenM3) {
         try {
-            String url = logisticaServiceUrl + "/api/camiones/verificar-disponibilidad?peso=" + pesoKg + "&volumen=" + volumenM3;
-            Boolean disponible = restTemplate.getForObject(url, Boolean.class);
+            RestClient restClient = restClientBuilder
+                    .baseUrl(logisticaServiceUrl)
+                    .build();
+            
+            Boolean disponible = restClient.get()
+                    .uri("/api/camiones/verificar-disponibilidad?peso={peso}&volumen={volumen}", pesoKg, volumenM3)
+                    .retrieve()
+                    .body(Boolean.class);
+                    
             return Boolean.TRUE.equals(disponible);
+            
         } catch (Exception e) {
             log.error("Error al verificar disponibilidad de camiones", e);
             return false;
