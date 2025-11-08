@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -109,7 +110,18 @@ public class SolicitudService {
             log.info("Nuevo contenedor creado: {}", contenedorId);
         }
 
-        // 3. Verificar disponibilidad en logística
+        // 3. Obtener ubicaciones de logística (para direcciones y coordenadas)
+        UbicacionDTO ubicacionOrigen = logisticaClient.obtenerUbicacion(request.getOrigenId());
+        if (ubicacionOrigen == null) {
+            throw new IllegalArgumentException("Ubicación de origen no encontrada: " + request.getOrigenId());
+        }
+        
+        UbicacionDTO ubicacionDestino = logisticaClient.obtenerUbicacion(request.getDestinoId());
+        if (ubicacionDestino == null) {
+            throw new IllegalArgumentException("Ubicación de destino no encontrada: " + request.getDestinoId());
+        }
+
+        // 4. Verificar disponibilidad en logística
         Contenedor contenedor = contenedorRepository.findById(contenedorId)
                 .orElseThrow(() -> new IllegalArgumentException("Contenedor no encontrado"));
         
@@ -123,18 +135,31 @@ public class SolicitudService {
                     contenedor.getPesoKg(), contenedor.getVolumenM3());
         }
 
-        // 4. Crear solicitud
+        // 5. Crear solicitud con datos completos
         Solicitud solicitud = new Solicitud();
         solicitud.setNumero(generarNumeroSolicitud());
         solicitud.setClienteId(clienteId);
         solicitud.setContenedorId(contenedorId);
         solicitud.setOrigenId(request.getOrigenId());
         solicitud.setDestinoId(request.getDestinoId());
+        
+        // Establecer dirección y coordenadas del origen (desde logística)
+        solicitud.setOrigenDireccion(ubicacionOrigen.getDireccion());
+        solicitud.setOrigenLatitud(BigDecimal.valueOf(ubicacionOrigen.getLatitud()));
+        solicitud.setOrigenLongitud(BigDecimal.valueOf(ubicacionOrigen.getLongitud()));
+        
+        // Establecer dirección y coordenadas del destino (desde logística)
+        solicitud.setDestinoDireccion(ubicacionDestino.getDireccion());
+        solicitud.setDestinoLatitud(BigDecimal.valueOf(ubicacionDestino.getLatitud()));
+        solicitud.setDestinoLongitud(BigDecimal.valueOf(ubicacionDestino.getLongitud()));
+        
         solicitud.setEstado("BORRADOR"); // Estado inicial
         solicitud.setFechaSolicitud(LocalDateTime.now());
 
         Solicitud guardada = solicitudRepository.save(solicitud);
-        log.info("Solicitud creada: {} ({})", guardada.getId(), guardada.getNumero());
+        log.info("Solicitud creada: {} ({}) - Origen: {} -> Destino: {}", 
+                guardada.getId(), guardada.getNumero(), 
+                ubicacionOrigen.getNombre(), ubicacionDestino.getNombre());
         
         return convertirADTO(guardada);
     }

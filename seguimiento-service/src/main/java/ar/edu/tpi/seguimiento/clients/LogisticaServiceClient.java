@@ -31,7 +31,7 @@ public class LogisticaServiceClient {
                     .build();
             
             return restClient.get()
-                    .uri("/api/ubicaciones/{id}", ubicacionId)
+                    .uri("/ubicaciones/{id}", ubicacionId)
                     .retrieve()
                     .body(UbicacionDTO.class);
                     
@@ -55,7 +55,7 @@ public class LogisticaServiceClient {
                     .build();
             
             Boolean disponible = restClient.get()
-                    .uri("/api/camiones/verificar-disponibilidad?peso={peso}&volumen={volumen}", pesoKg, volumenM3)
+                    .uri("/camiones/verificar-disponibilidad?peso={peso}&volumen={volumen}", pesoKg, volumenM3)
                     .retrieve()
                     .body(Boolean.class);
                     
