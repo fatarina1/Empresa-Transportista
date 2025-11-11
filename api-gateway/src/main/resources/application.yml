@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8090
 
 spring:
   application:
@@ -32,7 +32,7 @@ spring:
 api-gateway:
   url-logistica-service: http://localhost:8082
   url-seguimiento-service: http://localhost:8081
-  url-geoapi-service: http://localhost:8083
+  url-geoapi-service: http://localhost:8080
 
 # Configuración de actuator para monitoreo
 management:

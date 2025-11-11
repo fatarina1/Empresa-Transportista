@@ -114,10 +114,11 @@ public class GatewayConfig {
                 // ============================================
                 
                 // GeoAPI - Calcular rutas y distancias
+                // Path: /geoapi/api/distancia → stripPrefix(1) → /api/distancia
                 .route("geoapi-calcular", r -> r
-                        .path("/api/geoapi/**")
+                        .path("/geoapi/**")
                         .filters(f -> f
-                                .stripPrefix(2)
+                                .stripPrefix(1)  // Solo elimina /geoapi, mantiene /api/distancia
                                 .addRequestHeader("X-Gateway-Service", "geoapi"))
                         .uri(urlGeoapi))
                 

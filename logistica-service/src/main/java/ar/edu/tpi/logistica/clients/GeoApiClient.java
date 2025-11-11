@@ -1,71 +1,43 @@
 package ar.edu.tpi.logistica.clients;
 
 import ar.edu.tpi.logistica.dto.DistanciaDTO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.web.client.RestClient;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GeoApiClient {
 
-    private final RestTemplate restTemplate;
+    private final RestClient.Builder restClientBuilder;
     
-    @Value("${geoapi.service.url:http://localhost:8083}")
+    @Value("${geoapi.service.url:http://localhost:8080}")
     private String geoApiServiceUrl;
 
-    public GeoApiClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
-
     /**
-     * Calcula la distancia entre dos puntos geográficos
+     * Calcula la distancia entre dos ubicaciones usando el servicio GeoAPI.
+     * Utiliza RestClient (Spring 6+) para realizar la petición HTTP.
+     * 
+     * @param origen Dirección o coordenadas de origen (ej: "-31.4167,-64.1833" o "Córdoba, Argentina")
+     * @param destino Dirección o coordenadas de destino
+     * @return DistanciaDTO con kilómetros y duración en texto
      */
-    public DistanciaDTO calcularDistancia(Double origenLat, Double origenLng, 
-                                           Double destinoLat, Double destinoLng) {
+    public DistanciaDTO calcularDistancia(String origen, String destino) {
         try {
-            String url = geoApiServiceUrl + "/api/geoapi/distancia" +
-                    "?origenLat=" + origenLat +
-                    "&origenLng=" + origenLng +
-                    "&destinoLat=" + destinoLat +
-                    "&destinoLng=" + destinoLng;
+            RestClient restClient = restClientBuilder
+                    .baseUrl(geoApiServiceUrl)
+                    .build();
             
-            Double distanciaKm = restTemplate.getForObject(url, Double.class);
-            
-            DistanciaDTO resultado = new DistanciaDTO();
-            resultado.setDistanciaKm(distanciaKm);
-            resultado.setOrigen(origenLat + "," + origenLng);
-            resultado.setDestino(destinoLat + "," + destinoLng);
-            // Estimar duración: 60 km/h promedio
-            resultado.setDuracionMinutos((int) (distanciaKm / 60.0 * 60));
-            
-            return resultado;
+            return restClient.get()
+                    .uri("/api/distancia?origen={origen}&destino={destino}", origen, destino)
+                    .retrieve()
+                    .body(DistanciaDTO.class);
             
         } catch (Exception e) {
-            log.error("Error al calcular distancia desde geoapi", e);
-            return null;
-        }
-    }
-
-    /**
-     * Calcula una ruta completa con todos los detalles
-     */
-    public DistanciaDTO calcularRuta(Map<String, Object> origen, Map<String, Object> destino) {
-        try {
-            String url = geoApiServiceUrl + "/api/geoapi/calcular-ruta";
-            
-            Map<String, Object> request = new HashMap<>();
-            request.put("origen", origen);
-            request.put("destino", destino);
-            
-            return restTemplate.postForObject(url, request, DistanciaDTO.class);
-            
-        } catch (Exception e) {
-            log.error("Error al calcular ruta desde geoapi", e);
+            log.error("Error al calcular distancia desde geoapi: origen={}, destino={}", origen, destino, e);
             return null;
         }
     }
