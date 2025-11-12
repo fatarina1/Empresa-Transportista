@@ -14,7 +14,7 @@ public class GeoApiClient {
 
     private final RestClient.Builder restClientBuilder;
     
-    @Value("${geoapi.service.url:http://localhost:8080}")
+    @Value("${geoapi.service.url:http://geoapi:8083}")
     private String geoApiServiceUrl;
 
     /**

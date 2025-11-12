@@ -1,16 +1,99 @@
-﻿version: '3.1'
-services:
+﻿services:
+  # Keycloak (identity provider) - exposed for admin UI. Keep credentials in .env in real projects.
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.3
     container_name: keycloak
     command: start-dev
     ports:
-      - "8180:8080" # host:container
+      - "8180:8080" # host:container (admin UI)
     environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin123
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin123}
     volumes:
       - keycloak_data:/opt/keycloak/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  # API Gateway - single entry point exposed to the host
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    image: tpi/api-gateway:latest
+    ports:
+      - "8080:8080"  # host:container (exposed)
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - LOGISTICA_URL=http://logistica-service:8082
+      - SEGUIMIENTO_URL=http://seguimiento-service:8081
+      - GEOAPI_URL=http://geoapi:8083
+    depends_on:
+      - geoapi
+      - logistica-service
+      - seguimiento-service
+    networks:
+      - app-net
+
+  # Seguimiento service - NOT exposed to host in production (internal only)
+  seguimiento-service:
+    build:
+      context: ../seguimiento-service
+      dockerfile: Dockerfile
+    image: tpi/seguimiento-service:latest
+    environment:
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - LOG_LEVEL=INFO
+      # DataSource: prefer an externally-provided DB via env (SPRING_DATASOURCE_URL),
+      # otherwise default to an in-memory H2 for local runs to avoid needing Postgres container
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:h2:mem:testdb}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${SPRING_DATASOURCE_DRIVER_CLASS_NAME:-org.h2.Driver}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-sa}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-}
+    depends_on:
+      - logistica-service
+    networks:
+      - app-net
+
+  # Logistica service - depends on geoapi; NOT exposed to host in production
+  logistica-service:
+    build:
+      context: ../logistica-service
+      dockerfile: Dockerfile
+    image: tpi/logistica-service:latest
+    environment:
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - VALOR_LITRO_COMBUSTIBLE=${VALOR_LITRO_COMBUSTIBLE:-450.0}
+    depends_on:
+      - geoapi
+    networks:
+      - app-net
+
+  # GeoAPI service - internal service for map calculations; NOT exposed to host in production
+  geoapi:
+    build:
+      context: ../geoapi
+      dockerfile: Dockerfile
+    image: tpi/geoapi:latest
+    environment:
+      - GOOGLE_MAPS_APIKEY=${GOOGLE_MAPS_APIKEY}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+    ports:
+      - "8083:8083"
+    networks:
+      - app-net
+
 
 volumes:
   keycloak_data:
+  pgdata:
+
+networks:
+  app-net:
+    driver: bridge

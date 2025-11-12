@@ -22,8 +22,8 @@ public class GeoService {
         RestClient client = builder.baseUrl("https://maps.googleapis.com/maps/api").build();
 
         String url = "/distancematrix/json?origins=" + origen +
-                     "&destinations=" + destino +
-                     "&units=metric&key=" + apiKey;
+                    "&destinations=" + destino +
+                    "&units=metric&key=" + apiKey;
 
         ResponseEntity<String> response = client.get()
                 .uri(url)

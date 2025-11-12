@@ -1,11 +1,11 @@
 server:
-  port: 8090
+  port: 8080
 
 spring:
   application:
     name: api-gateway
   cloud:
-    gateway:
+    api-gateway:
       # Las rutas ahora se configuran programáticamente en GatewayConfig.java
       # Esto permite mayor flexibilidad y control sobre filtros y predicados
       
@@ -30,9 +30,9 @@ spring:
 
 # Configuración de URLs de microservicios (externalizadas)
 api-gateway:
-  url-logistica-service: http://localhost:8082
-  url-seguimiento-service: http://localhost:8081
-  url-geoapi-service: http://localhost:8080
+  url-logistica-service: http://logistica-service:8082
+  url-seguimiento-service: http://seguimiento-service:8081
+  url-geoapi-service: http://geoapi:8083
 
 # Configuración de actuator para monitoreo
 management:

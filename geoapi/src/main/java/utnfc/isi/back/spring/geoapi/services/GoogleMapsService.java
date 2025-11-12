@@ -29,7 +29,7 @@ public class GoogleMapsService {
      * Si la API Key no está configurada o falla, usa Haversine como fallback
      */
     public RutaResponseDTO calcularRuta(Double origenLat, Double origenLng, 
-                                         Double destinoLat, Double destinoLng) {
+                                        Double destinoLat, Double destinoLng) {
         String origin = origenLat + "," + origenLng;
         String destination = destinoLat + "," + destinoLng;
         
@@ -104,7 +104,7 @@ public class GoogleMapsService {
      * Método fallback usando fórmula de Haversine cuando Google Maps API no está disponible
      */
     private RutaResponseDTO calcularConHaversine(String origin, String destination,
-                                                  double lat1, double lon1, double lat2, double lon2) {
+                                                double lat1, double lon1, double lat2, double lon2) {
         log.info("Usando cálculo Haversine para distancia aproximada");
         
         double distancia = calcularDistanciaHaversine(lat1, lon1, lat2, lon2);

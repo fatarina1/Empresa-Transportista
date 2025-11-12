@@ -53,7 +53,7 @@ cd geoapi
 mvn spring-boot:run
 ```
 
-El servicio estará disponible en: **http://localhost:8080**
+El servicio estará disponible en: **http://localhost:8083**
 
 ---
 
@@ -70,7 +70,7 @@ El servicio estará disponible en: **http://localhost:8080**
 **Ejemplo de uso:**
 
 ```bash
-curl "http://localhost:8080/api/distancia?origen=-31.4167,-64.1833&destino=-32.8908,-68.8272"
+curl "http://localhost:8083/api/distancia?origen=-31.4167,-64.1833&destino=-32.8908,-68.8272"
 ```
 
 **Respuesta:**
@@ -113,7 +113,7 @@ geoapi/
 
 ### Desde Swagger UI
 
-Acceder a: http://localhost:8080/swagger-ui.html
+Acceder a: http://localhost:8083/swagger-ui.html
 
 ### Ejemplos de prueba:
 

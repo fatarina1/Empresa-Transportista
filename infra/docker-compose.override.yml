@@ -1,0 +1,33 @@
+# Development overrides: expose internal services for local debugging
+services:
+  # Expose geoapi for debugging on host 8083
+  geoapi:
+    ports:
+      - "8083:8083"
+    networks:
+      - app-net
+
+  # Expose logistica for debugging on host 8082
+  logistica-service:
+    ports:
+      - "8082:8082"
+    networks:
+      - app-net
+
+  # Expose seguimiento for debugging on host 8081
+  seguimiento-service:
+    ports:
+      - "8081:8081"
+    networks:
+      - app-net
+
+  # Expose API Gateway for debugging on host 8080
+  api-gateway:
+    ports:
+      - "8080:8080"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
