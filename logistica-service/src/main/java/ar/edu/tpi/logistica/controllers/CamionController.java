@@ -10,7 +10,7 @@ import ar.edu.tpi.logistica.services.CamionService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/camiones")
+@RequestMapping("/camiones")
 
 public class CamionController {
 
@@ -60,5 +60,14 @@ public class CamionController {
     @GetMapping("/disponibles")
     public List<Camion> listarDisponibles() {
         return camionService.obtenerDisponibles();
+    }
+
+    // Verificar disponibilidad para peso y volumen específicos
+    @GetMapping("/verificar-disponibilidad")
+    public ResponseEntity<Boolean> verificarDisponibilidad(
+            @RequestParam Double peso,
+            @RequestParam Double volumen) {
+        boolean disponible = camionService.verificarDisponibilidad(peso, volumen);
+        return ResponseEntity.ok(disponible);
     }
 }

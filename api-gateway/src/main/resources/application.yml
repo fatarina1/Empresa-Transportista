@@ -1,0 +1,76 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    api-gateway:
+      # Las rutas ahora se configuran programáticamente en GatewayConfig.java
+      # Esto permite mayor flexibilidad y control sobre filtros y predicados
+      
+      # Configuración CORS global
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:4200"
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+# Configuración de URLs de microservicios (externalizadas)
+api-gateway:
+  url-logistica-service: http://logistica-service:8082
+  url-seguimiento-service: http://seguimiento-service:8081
+  url-geoapi-service: http://geoapi:8083
+
+# Configuración de actuator para monitoreo
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    reactor.netty: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Configuración de OAuth2 con Keycloak (API Gateway actúa como OAuth2 Client)
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: tpi-backend-client
+            # No usamos client-secret (cliente público)
+            authorization-grant-type: authorization_code
+            redirect-uri: "http://localhost:8080/api/login/oauth2/code/keycloak"
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            authorization-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/auth
+            token-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/token
+            jwk-set-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/certs
+            user-info-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/tpi-backend
