@@ -41,6 +41,33 @@ public class SeguimientoClient {
         return null;
     }
 
+    /**
+     * Actualiza costos de la solicitud en el servicio de seguimiento.
+     */
+    public boolean actualizarCostosSolicitud(Long solicitudId, java.math.BigDecimal costoFinal, Integer tiempoRealMin, java.math.BigDecimal costoEstimado) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(seguimientoServiceUrl)
+                    .build();
+
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            if (costoFinal != null) body.put("costoFinal", costoFinal);
+            if (tiempoRealMin != null) body.put("tiempoRealMin", tiempoRealMin);
+            if (costoEstimado != null) body.put("costoEstimado", costoEstimado);
+
+            restClient.patch()
+                    .uri("/solicitudes/{id}/costos", solicitudId)
+                    .body(body)
+                    .retrieve()
+                    .toBodilessEntity();
+
+            return true;
+        } catch (Exception e) {
+            log.error("Error al actualizar costos de solicitud {}: {}", solicitudId, e.getMessage());
+            return false;
+        }
+    }
+
     @Data
     private static class SolicitudDetalleRemota {
         private ContenedorRemotoDTO contenedor;

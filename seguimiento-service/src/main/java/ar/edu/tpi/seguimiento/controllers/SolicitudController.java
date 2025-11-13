@@ -101,4 +101,39 @@ public class SolicitudController {
         solicitudService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Actualiza campos de costos y tiempos reales/estimados de la solicitud.
+     * Body esperado: { "costoFinal": 12345.67, "tiempoRealMin": 240 }
+     */
+    @PatchMapping("/{id}/costos")
+    public ResponseEntity<SolicitudDTO> actualizarCostos(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            // Extraer valores (opcionales)
+            java.math.BigDecimal costoFinal = null;
+            Integer tiempoRealMin = null;
+            java.math.BigDecimal costoEstimado = null;
+
+            if (body.containsKey("costoFinal") && body.get("costoFinal") != null) {
+                costoFinal = new java.math.BigDecimal(body.get("costoFinal").toString());
+            }
+            if (body.containsKey("tiempoRealMin") && body.get("tiempoRealMin") != null) {
+                tiempoRealMin = Integer.parseInt(body.get("tiempoRealMin").toString());
+            }
+            if (body.containsKey("costoEstimado") && body.get("costoEstimado") != null) {
+                costoEstimado = new java.math.BigDecimal(body.get("costoEstimado").toString());
+            }
+
+            SolicitudDTO actualizada = solicitudService.actualizarCostos(id, costoFinal, tiempoRealMin, costoEstimado);
+            return ResponseEntity.ok(actualizada);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al actualizar costos: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error inesperado al actualizar costos: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

@@ -188,6 +188,26 @@ public class SolicitudService {
         log.info("Solicitud eliminada: {}", id);
     }
 
+    @Transactional
+    public SolicitudDTO actualizarCostos(Long id, java.math.BigDecimal costoFinal, Integer tiempoRealMin, java.math.BigDecimal costoEstimado) {
+        Solicitud solicitud = solicitudRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+
+        if (costoFinal != null) {
+            solicitud.setCostoFinal(costoFinal);
+        }
+        if (tiempoRealMin != null) {
+            solicitud.setTiempoRealMin(tiempoRealMin);
+        }
+        if (costoEstimado != null) {
+            solicitud.setCostoEstimado(costoEstimado);
+        }
+
+        Solicitud actualizada = solicitudRepository.save(solicitud);
+        log.info("Solicitud {}: costos actualizados (costoFinal={}, tiempoRealMin={})", id, costoFinal, tiempoRealMin);
+        return convertirADTO(actualizada);
+    }
+
     private String generarNumeroSolicitud() {
         String numero;
         do {

@@ -40,6 +40,9 @@ public class TramoService {
     @Autowired
     private ar.edu.tpi.logistica.clients.SeguimientoClient seguimientoClient;
 
+    @Autowired
+    private ar.edu.tpi.logistica.services.CostoService costoService;
+
     public List<TramoDTO> obtenerTodos() {
         return tramoRepository.findAll().stream()
                 .map(this::convertirADTO)
@@ -263,9 +266,17 @@ public class TramoService {
         long duracionMinutos = ChronoUnit.MINUTES.between(tramo.getFechaInicioReal(), fechaFin);
         log.info("Tramo {} finalizado. Duración: {} minutos", tramoId, duracionMinutos);
 
-        // Liberar camión
+        // Calcular costo real si tiene camión asignado
         if (tramo.getCamionId() != null) {
             camionRepository.findById(tramo.getCamionId()).ifPresent(camion -> {
+                try {
+                    java.math.BigDecimal costoReal = costoService.calcularCostoReal(tramo, camion);
+                    tramo.setCostoReal(costoReal.doubleValue());
+                } catch (Exception e) {
+                    log.warn("No se pudo calcular costo real para tramo {}: {}", tramoId, e.getMessage());
+                }
+
+                // Liberar camión
                 camion.setDisponible(true);
                 camionRepository.save(camion);
                 log.info("Camión {} liberado", camion.getId());
@@ -273,7 +284,43 @@ public class TramoService {
         }
 
         Tramo actualizado = tramoRepository.save(tramo);
-        
+
+        // Si todos los tramos de la ruta están finalizados, calcular costo total y notificar a seguimiento
+        try {
+            Long rutaId = tramo.getRuta().getId();
+            boolean todosFinalizados = tramoRepository.findByRutaIdOrderByOrdenAsc(rutaId)
+                    .stream()
+                    .allMatch(t -> t.getEstado() == Tramo.EstadoTramo.FINALIZADO);
+
+            if (todosFinalizados) {
+                java.math.BigDecimal sumaCostos = tramoRepository.findByRutaIdOrderByOrdenAsc(rutaId).stream()
+                        .map(t -> t.getCostoReal() != null ? java.math.BigDecimal.valueOf(t.getCostoReal()) : java.math.BigDecimal.ZERO)
+                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+                // Calcular tiempo real en minutos sumando duraciones
+                int tiempoRealMinTotal = tramoRepository.findByRutaIdOrderByOrdenAsc(rutaId).stream()
+                        .mapToInt(t -> {
+                            if (t.getFechaInicioReal() != null && t.getFechaFinReal() != null) {
+                                return (int) java.time.temporal.ChronoUnit.MINUTES.between(t.getFechaInicioReal(), t.getFechaFinReal());
+                            }
+                            return 0;
+                        }).sum();
+
+                // Notificar a seguimiento service usando la solicitud externa asociada a la ruta
+                Long solicitudExternaId = tramo.getRuta().getSolicitudExternaId();
+                if (solicitudExternaId != null) {
+                    boolean ok = seguimientoClient.actualizarCostosSolicitud(solicitudExternaId, sumaCostos, tiempoRealMinTotal, null);
+                    if (!ok) {
+                        log.warn("No se pudo notificar a seguimiento la actualización de costos para solicitud {}", solicitudExternaId);
+                    } else {
+                        log.info("Solicitud {} actualizada con costoFinal={} y tiempoRealMin={}", solicitudExternaId, sumaCostos, tiempoRealMinTotal);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error al agregar costos totales de la ruta: {}", e.getMessage());
+        }
+
         return convertirADTO(actualizado);
     }
 
