@@ -13,13 +13,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class GeoService {
 
-    @Value("${google.maps.apikey}")
+    @Value("${GOOGLE_MAPS_APIKEY:}")
     private String apiKey;
 
     private final RestClient.Builder builder;
 
     public DistanciaDTO calcularDistancia(String origen, String destino) throws Exception {
         RestClient client = builder.baseUrl("https://maps.googleapis.com/maps/api").build();
+
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("GOOGLE_MAPS_APIKEY no está configurada. Establecer la variable de entorno GOOGLE_MAPS_APIKEY");
+        }
 
         String url = "/distancematrix/json?origins=" + origen +
                     "&destinations=" + destino +

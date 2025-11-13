@@ -34,13 +34,19 @@ Este proyecto implementa un microservicio RESTful que actúa como intermediario 
 
 ### 2. Configurar la API Key
 
-Editar `src/main/resources/application.properties`:
+Configurar la API Key mediante la variable de entorno `GOOGLE_MAPS_APIKEY`.
 
-```properties
-google.maps.apikey=TU_API_KEY_AQUI
+Ejemplo (Linux / macOS / PowerShell):
+
+```bash
+export GOOGLE_MAPS_APIKEY="TU_API_KEY_AQUI"
+# o en PowerShell
+$env:GOOGLE_MAPS_APIKEY = 'TU_API_KEY_AQUI'
 ```
 
-**⚠️ Importante**: No subir la API Key al repositorio. Usar variables de entorno en producción.
+En desarrollo con `docker-compose`, copia `infra/.env.example` a `infra/.env` y completa la variable.
+
+**⚠️ Importante**: No subir la API Key al repositorio. Mantenerla fuera del control de versiones.
 
 ---
 
