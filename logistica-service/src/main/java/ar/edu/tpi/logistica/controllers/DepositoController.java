@@ -3,6 +3,7 @@ package ar.edu.tpi.logistica.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import ar.edu.tpi.logistica.entities.Deposito;
 import ar.edu.tpi.logistica.repositories.DepositoRepository;
 
@@ -36,12 +37,14 @@ public class DepositoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Deposito> crear(@RequestBody Deposito deposito) {
         Deposito creado = depositoRepository.save(deposito);
         return ResponseEntity.ok(creado);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Deposito> actualizar(@PathVariable Long id, @RequestBody Deposito deposito) {
         if (!depositoRepository.existsById(id)) return ResponseEntity.notFound().build();
         deposito.setId(id);
@@ -50,6 +53,7 @@ public class DepositoController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (!depositoRepository.existsById(id)) return ResponseEntity.notFound().build();
         depositoRepository.deleteById(id);

@@ -3,6 +3,7 @@ package ar.edu.tpi.logistica.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import ar.edu.tpi.logistica.entities.Camion;
 import ar.edu.tpi.logistica.services.CamionService;
@@ -36,6 +37,7 @@ public class CamionController {
     
     // Crear nuevo camión
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Camion> crear(@RequestBody Camion camion) {
         Camion creado = camionService.guardar(camion);
         return ResponseEntity.ok(creado);
@@ -43,6 +45,7 @@ public class CamionController {
 
     // Actualizar camión por dominio
     @PutMapping("/{dominio}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Camion> actualizar(@PathVariable String dominio, @RequestBody Camion camion) {
         camion.setDominio(dominio);
         Camion actualizado = camionService.guardar(camion);
@@ -51,6 +54,7 @@ public class CamionController {
 
     // Eliminar camión por id
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Void> eliminarPorDominio(@PathVariable long id) {
         camionService.eliminar(id);
         return ResponseEntity.noContent().build();

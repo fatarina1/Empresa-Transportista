@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Slf4j
 @RestController
@@ -58,6 +59,7 @@ public class TramoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('OPERADOR','ADMIN')")
     public ResponseEntity<TramoDTO> crear(@RequestBody TramoDTO tramoDTO) {
         try {
             TramoDTO creado = tramoService.crear(tramoDTO);
@@ -69,6 +71,7 @@ public class TramoController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OPERADOR','ADMIN')")
     public ResponseEntity<TramoDTO> actualizar(@PathVariable Long id, @RequestBody TramoDTO tramoDTO) {
         try {
             TramoDTO actualizado = tramoService.actualizar(id, tramoDTO);
@@ -84,6 +87,7 @@ public class TramoController {
      * Body: {"camionId": 1}
      */
     @PatchMapping("/{id}/asignar-camion")
+    @PreAuthorize("hasAnyRole('OPERADOR','ADMIN')")
     public ResponseEntity<TramoDTO> asignarCamion(
             @PathVariable Long id,
             @RequestBody Map<String, Long> body) {
@@ -104,6 +108,7 @@ public class TramoController {
      * RF7: Iniciar tramo (registra fecha/hora inicio real)
      */
     @PatchMapping("/{id}/iniciar")
+    @PreAuthorize("hasAnyRole('TRANSPORTISTA','ADMIN')")
     public ResponseEntity<TramoDTO> iniciarTramo(@PathVariable Long id) {
         try {
             TramoDTO actualizado = tramoService.iniciarTramo(id);
@@ -114,10 +119,10 @@ public class TramoController {
         }
     }
 
-    /**
-     * RF7: Finalizar tramo (registra fecha/hora fin real, libera camión)
-     */
+
+    // RF7: Finalizar tramo (registra fecha/hora fin real, libera camión)
     @PatchMapping("/{id}/finalizar")
+    @PreAuthorize("hasAnyRole('TRANSPORTISTA','ADMIN')")
     public ResponseEntity<TramoDTO> finalizarTramo(@PathVariable Long id) {
         try {
             TramoDTO actualizado = tramoService.finalizarTramo(id);
@@ -129,6 +134,7 @@ public class TramoController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         try {
             tramoService.eliminar(id);

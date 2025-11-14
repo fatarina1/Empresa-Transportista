@@ -3,6 +3,7 @@ package ar.edu.tpi.logistica.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import ar.edu.tpi.logistica.entities.TarifaVolumen;
 import ar.edu.tpi.logistica.repositories.TarifaVolumenRepository;
 
@@ -37,12 +38,14 @@ public class TarifaVolumenController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<TarifaVolumen> crear(@RequestBody TarifaVolumen tarifa) {
         TarifaVolumen creado = tarifaRepository.save(tarifa);
         return ResponseEntity.ok(creado);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<TarifaVolumen> actualizar(@PathVariable Long id, @RequestBody TarifaVolumen tarifa) {
         if (!tarifaRepository.existsById(id)) return ResponseEntity.notFound().build();
         tarifa.setId(id);
@@ -51,6 +54,7 @@ public class TarifaVolumenController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (!tarifaRepository.existsById(id)) return ResponseEntity.notFound().build();
         tarifaRepository.deleteById(id);

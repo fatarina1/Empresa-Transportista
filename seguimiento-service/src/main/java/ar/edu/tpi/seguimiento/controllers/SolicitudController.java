@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -60,11 +61,11 @@ public class SolicitudController {
         return ResponseEntity.ok(solicitudes);
     }
 
-    /**
-     * Endpoint principal para crear una nueva solicitud de transporte.
-     * Puede crear cliente y/o contenedor si no existen.
-     */
+    
+    //Endpoint principal para crear una nueva solicitud de transporte.
+    //Puede crear cliente y/o contenedor si no existen.
     @PostMapping
+    @PreAuthorize("hasAnyRole('CLIENTE','ADMIN')")
     public ResponseEntity<SolicitudDTO> crear(@RequestBody CrearSolicitudRequest request) {
         try {
             SolicitudDTO creada = solicitudService.crearSolicitud(request);
@@ -75,11 +76,11 @@ public class SolicitudController {
         }
     }
 
-    /**
-     * Actualizar el estado de una solicitud
-     * Estados: BORRADOR, PROGRAMADA, EN_TRANSITO, ENTREGADA
-     */
+    
+    //Actualizar el estado de una solicitud
+    //Estados: BORRADOR, PROGRAMADA, EN_TRANSITO, ENTREGADA
     @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<SolicitudDTO> actualizarEstado(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
@@ -97,6 +98,7 @@ public class SolicitudController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         solicitudService.eliminar(id);
         return ResponseEntity.noContent().build();
@@ -107,6 +109,7 @@ public class SolicitudController {
      * Body esperado: { "costoFinal": 12345.67, "tiempoRealMin": 240 }
      */
     @PatchMapping("/{id}/costos")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<SolicitudDTO> actualizarCostos(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body) {
