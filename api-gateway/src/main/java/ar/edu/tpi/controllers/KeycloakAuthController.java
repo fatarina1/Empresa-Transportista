@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2Aut
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -21,11 +22,11 @@ public class KeycloakAuthController {
      * Spring Security exposes /oauth2/authorization/{registrationId} by default, so we redirect there.
      */
     @GetMapping("/api/login")
-    public ResponseEntity<Void> loginRedirect() {
+    public Mono<ResponseEntity<Void>> loginRedirect() {
         // Return a 302 redirect to Spring Security's authorization endpoint
-        return ResponseEntity.status(HttpStatus.FOUND)
+        return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("/oauth2/authorization/keycloak"))
-                .build();
+                .build());
     }
 
     /**
@@ -34,12 +35,12 @@ public class KeycloakAuthController {
      * Requires the user to be authenticated via OAuth2 Login (Keycloak).
      */
     @GetMapping("/api/me/token")
-    public ResponseEntity<Map<String, Object>> getToken(
+    public Mono<ResponseEntity<Map<String, Object>>> getToken(
             @RegisteredOAuth2AuthorizedClient("keycloak") OAuth2AuthorizedClient authorizedClient,
             @AuthenticationPrincipal OidcUser oidcUser) {
 
         if (authorizedClient == null || authorizedClient.getAccessToken() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
         }
 
         Map<String, Object> resp = new HashMap<>();
@@ -49,6 +50,6 @@ public class KeycloakAuthController {
         resp.put("refresh_token", authorizedClient.getRefreshToken() != null ? authorizedClient.getRefreshToken().getTokenValue() : null);
         resp.put("username", oidcUser != null ? oidcUser.getPreferredUsername() : null);
 
-        return ResponseEntity.ok(resp);
+        return Mono.just(ResponseEntity.ok(resp));
     }
 }
