@@ -31,21 +31,23 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/tpi-backend
+          # Usamos jwk-set-uri en lugar de issuer-uri para evitar validación estricta del issuer
+          # El gateway accede a Keycloak usando el nombre del servicio interno de Docker
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://keycloak:8080/realms/tpi-backend/protocol/openid-connect/certs}
       client:
         registration:
           keycloak:
-            client-id: tpi-backend-client
+            client-id: ${KEYCLOAK_CLIENT_ID:tpi-backend-client}
             # No usamos client-secret (cliente público)
             authorization-grant-type: authorization_code
-            redirect-uri: "http://localhost:8080/api/login/oauth2/code/keycloak"
+            redirect-uri: "${GATEWAY_REDIRECT_URI:http://localhost:8080/api/login/oauth2/code/keycloak}"
             scope: openid,profile,email
         provider:
           keycloak:
-            authorization-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/auth
-            token-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/token
-            jwk-set-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/certs
-            user-info-uri: http://localhost:8180/realms/tpi-backend/protocol/openid-connect/userinfo
+            authorization-uri: ${KEYCLOAK_AUTHZ_URI:http://keycloak:8080/realms/tpi-backend/protocol/openid-connect/auth}
+            token-uri: ${KEYCLOAK_TOKEN_URI:http://keycloak:8080/realms/tpi-backend/protocol/openid-connect/token}
+            jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://keycloak:8080/realms/tpi-backend/protocol/openid-connect/certs}
+            user-info-uri: ${KEYCLOAK_USERINFO_URI:http://keycloak:8080/realms/tpi-backend/protocol/openid-connect/userinfo}
             user-name-attribute: preferred_username
 
 # Configuración de URLs de microservicios (externalizadas)

@@ -1,0 +1,1039 @@
+{
+	"info": {
+		"name": "TPI Backend - Keycloak Auth",
+		"description": "Colección completa para probar autenticación y autorización con Keycloak.\n\n**Usuarios de prueba:**\n- cliente01 / Hola123 (rol: cliente)\n- admin01 / Clave123 (rol: admin)\n- transportista01 / Clave123 (rol: transportista)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "keycloak_url",
+			"value": "http://localhost:8180",
+			"type": "default"
+		},
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:8080",
+			"type": "default"
+		},
+		{
+			"key": "realm",
+			"value": "tpi-backend",
+			"type": "default"
+		},
+		{
+			"key": "client_id",
+			"value": "tpi-backend-client",
+			"type": "default"
+		},
+		{
+			"key": "access_token_cliente",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "access_token_admin",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "access_token_transportista",
+			"value": "",
+			"type": "default"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Autenticación",
+			"item": [
+				{
+					"name": "Login como CLIENTE",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Guardar el token automáticamente",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token_cliente\", jsonData.access_token);",
+									"    console.log(\"✅ Token de CLIENTE guardado\");",
+									"    ",
+									"    // Decodificar y mostrar info del token",
+									"    var base64Url = jsonData.access_token.split('.')[1];",
+									"    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"    var payload = JSON.parse(atob(base64));",
+									"    ",
+									"    console.log(\"👤 Usuario:\", payload.preferred_username);",
+									"    console.log(\"🎭 Roles:\", payload.resource_access['tpi-backend-client'].roles);",
+									"    console.log(\"⏰ Expira en:\", jsonData.expires_in, \"segundos\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "cliente01",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "Hola123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						},
+						"description": "Obtiene un token JWT para el usuario cliente01 con rol 'cliente'"
+					},
+					"response": []
+				},
+				{
+					"name": "Login como ADMIN",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token_admin\", jsonData.access_token);",
+									"    console.log(\"✅ Token de ADMIN guardado\");",
+									"    ",
+									"    var base64Url = jsonData.access_token.split('.')[1];",
+									"    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"    var payload = JSON.parse(atob(base64));",
+									"    ",
+									"    console.log(\"👤 Usuario:\", payload.preferred_username);",
+									"    console.log(\"🎭 Roles:\", payload.resource_access['tpi-backend-client'].roles);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "admin01",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "Clave123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						},
+						"description": "Obtiene un token JWT para el usuario admin01 con rol 'admin'"
+					},
+					"response": []
+				},
+				{
+					"name": "Login como TRANSPORTISTA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token_transportista\", jsonData.access_token);",
+									"    console.log(\"✅ Token de TRANSPORTISTA guardado\");",
+									"    ",
+									"    var base64Url = jsonData.access_token.split('.')[1];",
+									"    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"    var payload = JSON.parse(atob(base64));",
+									"    ",
+									"    console.log(\"👤 Usuario:\", payload.preferred_username);",
+									"    console.log(\"🎭 Roles:\", payload.resource_access['tpi-backend-client'].roles);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "transportista01",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "Clave123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						},
+						"description": "Obtiene un token JWT para el usuario transportista01 con rol 'transportista'"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para obtener tokens JWT de diferentes usuarios/roles"
+		},
+		{
+			"name": "2. Logística Service",
+			"item": [
+				{
+					"name": "Camiones",
+					"item": [
+						{
+							"name": "✅ Listar Camiones (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/camiones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"camiones"
+									]
+								},
+								"description": "✅ AUTORIZADO - Admin puede ver camiones"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Camiones (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/camiones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"camiones"
+									]
+								},
+								"description": "✅ AUTORIZADO - Transportista puede ver camiones"
+							},
+							"response": []
+						},
+						{
+							"name": "❌ Listar Camiones (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/camiones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"camiones"
+									]
+								},
+								"description": "❌ NO AUTORIZADO - Cliente no puede ver camiones (403 Forbidden)"
+							},
+							"response": []
+						},
+						{
+							"name": "❌ Listar Camiones (SIN TOKEN)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/camiones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"camiones"
+									]
+								},
+								"description": "❌ NO AUTENTICADO - Sin token debe devolver 401 Unauthorized"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Camión (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"dominio\": \"ZZ999XX\",\n  \"capacidadPesoKg\": 12000.0,\n  \"capacidadVolumenM3\": 60.0,\n  \"costoKmBase\": 90.0,\n  \"consumoPromedioLitrosKm\": 0.38,\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/camiones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"camiones"
+									]
+								},
+								"description": "✅ AUTORIZADO - Solo admin puede crear camiones\n\nCampos obligatorios:\n- dominio (String, 40 chars max, único)\n- capacidadPesoKg (Double, peso máximo en kg)\n- capacidadVolumenM3 (Double, volumen máximo en m³)\n- costoKmBase (Double, costo base por km)\n- consumoPromedioLitrosKm (Double, litros/km)\n- disponible (Boolean, si está disponible para asignación)"
+							},
+							"response": []
+						},
+						{
+							"name": "❌ Crear Camión (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"dominio\": \"YY888WW\",\n  \"capacidadPesoKg\": 11000.0,\n  \"capacidadVolumenM3\": 55.0,\n  \"costoKmBase\": 85.0,\n  \"consumoPromedioLitrosKm\": 0.36,\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/camiones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"camiones"
+									]
+								},
+								"description": "❌ NO AUTORIZADO - Transportista no puede crear camiones (403 Forbidden)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Depósitos",
+					"item": [
+						{
+							"name": "✅ Listar Depósitos (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/depositos",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"depositos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Depósitos (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/depositos",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"depositos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Depósito (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Depósito Zona Norte\",\n  \"ubicacionId\": 1,\n  \"costoEstadiaDiaria\": 250.0,\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/depositos",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"depositos"
+									]
+								},
+								"description": "✅ AUTORIZADO - Solo admin puede crear depósitos\n\nCampos obligatorios:\n- nombre (String, 120 chars max)\n- ubicacionId (Long, referencia a una ubicación existente)\n- costoEstadiaDiaria (Double, costo diario de estadía)\n- activo (Boolean, si el depósito está operativo)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Ubicaciones",
+					"item": [
+						{
+							"name": "✅ Listar Ubicaciones (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/ubicaciones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"ubicaciones"
+									]
+								},
+								"description": "✅ AUTORIZADO - Solo admin puede ver ubicaciones"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Ubicación (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Mendoza Centro\",\n  \"descripcion\": \"Centro de distribución Mendoza\",\n  \"direccion\": \"Av. San Martín 1500, Mendoza\",\n  \"latitud\": -32.889459,\n  \"longitud\": -68.845839,\n  \"tipo\": \"DEPOSITO\",\n  \"notas\": \"Horario: Lunes a Viernes 8-18hs\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/ubicaciones",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"ubicaciones"
+									]
+								},
+								"description": "✅ AUTORIZADO - Solo admin puede crear ubicaciones\n\nCampos obligatorios:\n- nombre (String, 120 chars)\n- latitud (Double, coordenada GPS)\n- longitud (Double, coordenada GPS)\n\nCampos opcionales:\n- descripcion (String, 120 chars)\n- direccion (String, 240 chars)\n- tipo (String, 30 chars, ej: DEPOSITO, CLIENTE)\n- notas (String, texto largo)"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Seguimiento Service",
+			"item": [
+				{
+					"name": "Solicitudes",
+					"item": [
+						{
+							"name": "✅ Listar Solicitudes (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes"
+									]
+								},
+								"description": "✅ AUTORIZADO - Cliente puede ver solicitudes"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Solicitudes (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes"
+									]
+								},
+								"description": "✅ AUTORIZADO - Admin puede ver todas las solicitudes"
+							},
+							"response": []
+						},
+						{
+							"name": "❌ Listar Solicitudes (SIN TOKEN)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes"
+									]
+								},
+								"description": "❌ NO AUTENTICADO - Debe devolver 401 Unauthorized"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Solicitud (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"clienteId\": 1,\n  \"contenedorId\": 1,\n  \"origenId\": 1,\n  \"destinoId\": 2\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes"
+									]
+								},
+								"description": "✅ AUTORIZADO - Cliente puede crear solicitudes\n\nCampos obligatorios (IDs existentes):\n- clienteId (Long, ID del cliente)\n- contenedorId (Long, ID del contenedor)\n- origenId (Long, ID de ubicación origen)\n- destinoId (Long, ID de ubicación destino)\n\nO si el cliente/contenedor no existen, usar:\n- clienteNombre, clienteEmail, clienteTelefono, etc.\n- contenedorIdentificacion, contenedorPesoKg, contenedorVolumenM3, etc."
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Solicitud Completa (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"origenId\": 1,\n  \"destinoId\": 2,\n  \"clienteNombre\": \"Juan Pérez\",\n  \"clienteEmail\": \"juan.perez@example.com\",\n  \"clienteTelefono\": \"+54 9 261 5551234\",\n  \"clienteDocumento\": \"20-12345678-9\",\n  \"clienteDireccion\": \"Calle Falsa 123, Mendoza\",\n  \"contenedorIdentificacion\": \"CONT-NEW-001\",\n  \"contenedorPesoKg\": 2500.75,\n  \"contenedorVolumenM3\": 15.5,\n  \"contenedorLargoM\": 3.5,\n  \"contenedorAnchoM\": 2.2,\n  \"contenedorAltoM\": 2.0,\n  \"contenedorDescripcion\": \"Maquinaria industrial\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes"
+									]
+								},
+								"description": "✅ AUTORIZADO - Cliente puede crear solicitud con datos nuevos de cliente y contenedor\n\nEste request crea el cliente y contenedor automáticamente si no existen"
+							},
+							"response": []
+						},
+						{
+							"name": "❌ Crear Solicitud (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"clienteId\": 2,\n  \"contenedorId\": 2,\n  \"origenId\": 2,\n  \"destinoId\": 3\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes"
+									]
+								},
+								"description": "❌ NO AUTORIZADO - Transportista no puede crear solicitudes (403 Forbidden)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Contenedores",
+					"item": [
+						{
+							"name": "✅ Listar Contenedores (TODOS)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/contenedores",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"contenedores"
+									]
+								},
+								"description": "✅ AUTORIZADO - Todos los usuarios autenticados pueden ver contenedores"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Contenedor (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"identificacion\": \"CONT-2025-001\",\n  \"pesoKg\": 1500.50,\n  \"volumenM3\": 12.5,\n  \"largoM\": 3.0,\n  \"anchoM\": 2.0,\n  \"altoM\": 2.1,\n  \"descripcion\": \"Productos electrónicos - frágil\",\n  \"clienteId\": 1\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/contenedores",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"contenedores"
+									]
+								},
+								"description": "✅ AUTORIZADO - Cliente puede crear contenedores\n\nCampos obligatorios:\n- identificacion (String, 80 chars, único)\n- pesoKg (BigDecimal, peso en kg)\n- volumenM3 (BigDecimal, volumen en m³)\n- clienteId (Long, ID del cliente propietario)\n\nCampos opcionales:\n- largoM (BigDecimal, largo en metros)\n- anchoM (BigDecimal, ancho en metros)\n- altoM (BigDecimal, alto en metros)\n- descripcion (String, 240 chars)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Clientes",
+					"item": [
+						{
+							"name": "✅ Listar Clientes (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/clientes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"clientes"
+									]
+								},
+								"description": "✅ AUTORIZADO - Admin puede ver todos los clientes"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Crear Cliente (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Empresa XYZ S.A.\",\n  \"email\": \"contacto@empresaxyz.com\",\n  \"telefono\": \"+54 261 4567890\",\n  \"documento\": \"30-71234567-8\",\n  \"direccion\": \"Av. Libertador 2500, CABA\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/clientes",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"clientes"
+									]
+								},
+								"description": "✅ AUTORIZADO - Admin puede crear clientes\n\nCampos obligatorios:\n- nombre (String, 120 chars)\n- email (String, 160 chars)\n\nCampos opcionales:\n- telefono (String, 40 chars)\n- documento (String, 50 chars, ej: CUIT/DNI)\n- direccion (String, 240 chars)"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "4. Health Checks",
+			"item": [
+				{
+					"name": "Gateway Health (sin auth)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/actuator/health",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						},
+						"description": "Endpoint público - no requiere autenticación"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

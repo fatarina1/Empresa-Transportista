@@ -14,11 +14,11 @@
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "/bin/sh", "-c", "curl -f http://localhost:8080/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 40s
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # API Gateway - single entry point exposed to the host
   api-gateway:
@@ -30,14 +30,25 @@
       - "8080:8080"  # host:container (exposed)
     environment:
       - SPRING_PROFILES_ACTIVE=default
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - KEYCLOAK_ISSUER_URI=http://localhost:8180/realms/tpi-backend
+      - KEYCLOAK_AUTHZ_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/auth
+      - KEYCLOAK_TOKEN_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/token
+      - KEYCLOAK_JWKS_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/certs
+      - KEYCLOAK_USERINFO_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/userinfo
+      - KEYCLOAK_CLIENT_ID=tpi-backend-client
+      - GATEWAY_REDIRECT_URI=http://localhost:8080/api/login/oauth2/code/keycloak
       - LOGISTICA_URL=http://logistica-service:8082
       - SEGUIMIENTO_URL=http://seguimiento-service:8081
       - GEOAPI_URL=http://geoapi:8083
     depends_on:
-      - geoapi
-      - logistica-service
-      - seguimiento-service
+      keycloak:
+        condition: service_healthy
+      geoapi:
+        condition: service_started
+      logistica-service:
+        condition: service_started
+      seguimiento-service:
+        condition: service_started
     networks:
       - app-net
 
@@ -48,8 +59,9 @@
       dockerfile: Dockerfile
     image: tpi/seguimiento-service:latest
     environment:
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - KEYCLOAK_ISSUER_URI=http://host.docker.internal:8180/realms/tpi-backend
       - LOG_LEVEL=INFO
+      - LOGISTICA_URL=http://logistica-service:8082
       # DataSource: prefer an externally-provided DB via env (SPRING_DATASOURCE_URL),
       # otherwise default to an in-memory H2 for local runs to avoid needing Postgres container
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:h2:mem:testdb}
@@ -57,7 +69,10 @@
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-sa}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-}
     depends_on:
-      - logistica-service
+      keycloak:
+        condition: service_healthy
+      logistica-service:
+        condition: service_started
     networks:
       - app-net
 
@@ -68,10 +83,13 @@
       dockerfile: Dockerfile
     image: tpi/logistica-service:latest
     environment:
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - KEYCLOAK_ISSUER_URI=http://host.docker.internal:8180/realms/tpi-backend
       - VALOR_LITRO_COMBUSTIBLE=${VALOR_LITRO_COMBUSTIBLE:-450.0}
     depends_on:
-      - geoapi
+      keycloak:
+        condition: service_healthy
+      geoapi:
+        condition: service_started
     networks:
       - app-net
 
@@ -83,9 +101,12 @@
     image: tpi/geoapi:latest
     environment:
       - GOOGLE_MAPS_APIKEY=${GOOGLE_MAPS_APIKEY}
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
     ports:
       - "8083:8083"
+    depends_on:
+      keycloak:
+        condition: service_healthy
     networks:
       - app-net
 

@@ -12,20 +12,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http.csrf(csrf -> csrf.disable())
+        return http
+            .csrf(csrf -> csrf.disable())
             .authorizeExchange(exchanges -> exchanges
-                .pathMatchers(
-                    "/api/public/**",
-                    "/api/login",
-                    "/oauth2/**",
-                    "/actuator/health",
-                    "/actuator/info",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**"
-                ).permitAll()
+                .pathMatchers("/actuator/health", "/actuator/info").permitAll()
                 .anyExchange().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2.authorizationRedirectStrategy(null))
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
             .build();
     }
 }
