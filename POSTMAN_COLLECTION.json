@@ -555,7 +555,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"nombre\": \"Depósito Zona Norte\",\n  \"ubicacionId\": 1,\n  \"costoEstadiaDiaria\": 250.0,\n  \"activo\": true\n}"
+									"raw": "{\n  \"nombre\": \"Depósito Zona Norte\",\n  \"ubicacion\": {\"id\": 6},\n  \"costoEstadiaDiaria\": 250.0,\n  \"activo\": true\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/logistica/depositos",
@@ -568,7 +568,7 @@
 										"depositos"
 									]
 								},
-								"description": "✅ AUTORIZADO - Solo admin puede crear depósitos\n\nCampos obligatorios:\n- nombre (String, 120 chars max)\n- ubicacionId (Long, referencia a una ubicación existente)\n- costoEstadiaDiaria (Double, costo diario de estadía)\n- activo (Boolean, si el depósito está operativo)"
+								"description": "✅ AUTORIZADO - Solo admin puede crear depósitos\n\nCampos obligatorios:\n- nombre (String, 120 chars max)\n- ubicacion (Object con id, referencia a una ubicación existente: {\"id\": 6})\n- costoEstadiaDiaria (Double, costo diario de estadía)\n- activo (Boolean, si el depósito está operativo)\n\n⚠️ IMPORTANTE: Primero debes crear una ubicación con el request 'Crear Ubicación (ADMIN)' y usar su ID aquí."
 							},
 							"response": []
 						}
