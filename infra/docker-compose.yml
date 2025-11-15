@@ -27,16 +27,12 @@
       dockerfile: Dockerfile
     image: tpi/api-gateway:latest
     ports:
-      - "8080:8080"  # host:container (exposed)
+      - "8080:8080"  # host:container (ÚNICO PUERTO EXPUESTO AL HOST)
     environment:
       - SPRING_PROFILES_ACTIVE=default
-      - KEYCLOAK_ISSUER_URI=http://localhost:8180/realms/tpi-backend
-      - KEYCLOAK_AUTHZ_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/auth
-      - KEYCLOAK_TOKEN_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/token
-      - KEYCLOAK_JWKS_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/certs
-      - KEYCLOAK_USERINFO_URI=http://localhost:8180/realms/tpi-backend/protocol/openid-connect/userinfo
-      - KEYCLOAK_CLIENT_ID=tpi-backend-client
-      - GATEWAY_REDIRECT_URI=http://localhost:8080/api/login/oauth2/code/keycloak
+      # JWT validation endpoint
+      - KEYCLOAK_JWK_URI=http://host.docker.internal:8180/realms/tpi-backend/protocol/openid-connect/certs
+      # URLs internas de microservicios (NO expuestos al host)
       - LOGISTICA_URL=http://logistica-service:8082
       - SEGUIMIENTO_URL=http://seguimiento-service:8081
       - GEOAPI_URL=http://geoapi:8083
@@ -52,14 +48,14 @@
     networks:
       - app-net
 
-  # Seguimiento service - NOT exposed to host in production (internal only)
+  # Seguimiento service - NOT exposed to host (internal only, accesible solo via Gateway)
   seguimiento-service:
     build:
       context: ../seguimiento-service
       dockerfile: Dockerfile
     image: tpi/seguimiento-service:latest
+    # SIN PUERTO EXPUESTO - solo accesible internamente
     environment:
-      - KEYCLOAK_ISSUER_URI=http://host.docker.internal:8180/realms/tpi-backend
       - LOG_LEVEL=INFO
       - LOGISTICA_URL=http://logistica-service:8082
       # DataSource: prefer an externally-provided DB via env (SPRING_DATASOURCE_URL),
@@ -69,44 +65,35 @@
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-sa}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-}
     depends_on:
-      keycloak:
-        condition: service_healthy
       logistica-service:
         condition: service_started
     networks:
       - app-net
 
-  # Logistica service - depends on geoapi; NOT exposed to host in production
+  # Logistica service - NOT exposed to host (internal only, accesible solo via Gateway)
   logistica-service:
     build:
       context: ../logistica-service
       dockerfile: Dockerfile
     image: tpi/logistica-service:latest
+    # SIN PUERTO EXPUESTO - solo accesible internamente
     environment:
-      - KEYCLOAK_ISSUER_URI=http://host.docker.internal:8180/realms/tpi-backend
       - VALOR_LITRO_COMBUSTIBLE=${VALOR_LITRO_COMBUSTIBLE:-450.0}
     depends_on:
-      keycloak:
-        condition: service_healthy
       geoapi:
         condition: service_started
     networks:
       - app-net
 
-  # GeoAPI service - internal service for map calculations; NOT exposed to host in production
+  # GeoAPI service - NOT exposed to host (internal only, accesible solo via Gateway)
   geoapi:
     build:
       context: ../geoapi
       dockerfile: Dockerfile
     image: tpi/geoapi:latest
+    # SIN PUERTO EXPUESTO - solo accesible internamente
     environment:
       - GOOGLE_MAPS_APIKEY=${GOOGLE_MAPS_APIKEY}
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/tpi-backend
-    ports:
-      - "8083:8083"
-    depends_on:
-      keycloak:
-        condition: service_healthy
     networks:
       - app-net
 
