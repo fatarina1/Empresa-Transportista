@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     
-    <!-- Propiedades de configuración -->
-    <property name="LOG_PATH" value="logs"/>
-    <property name="LOG_FILE" value="logistica-service"/>
-    
     <!-- Patrón de log con Correlation ID -->
     <property name="LOG_PATTERN" 
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [CID=%X{correlationId}] %logger{36} - %msg%n"/>
     
-    <!-- Appender para CONSOLA -->
+    <!-- Appender para CONSOLA (stdout/stderr para Docker) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
@@ -17,77 +13,18 @@
         </encoder>
     </appender>
     
-    <!-- Appender para ARCHIVO con rotación diaria -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/${LOG_FILE}.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- Rotación diaria, conservar últimos 7 días -->
-            <fileNamePattern>${LOG_PATH}/${LOG_FILE}-%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>500MB</totalSizeCap>
-        </rollingPolicy>
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-    </appender>
-    
-    <!-- Appender para ARCHIVO DE ERRORES -->
-    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/${LOG_FILE}-error.log</file>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>ERROR</level>
-        </filter>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/${LOG_FILE}-error-%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
-        </rollingPolicy>
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-    </appender>
-    
     <!-- Loggers específicos por paquete -->
-    <logger name="ar.edu.tpi.logistica.controllers" level="INFO" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-    </logger>
+    <logger name="ar.edu.tpi.logistica.controllers" level="INFO"/>
+    <logger name="ar.edu.tpi.logistica.services" level="DEBUG"/>
+    <logger name="ar.edu.tpi.logistica.repositories" level="DEBUG"/>
     
-    <logger name="ar.edu.tpi.logistica.services" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-    </logger>
+    <!-- Logger para SQL (Hibernate) -->
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
     
-    <logger name="ar.edu.tpi.logistica.repositories" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-    </logger>
-    
-    <!-- Logger para requests HTTP (Spring Web) -->
-    <logger name="org.springframework.web" level="INFO" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-    
-    <!-- Logger para SQL (solo en desarrollo, comentar en producción) -->
-    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-    
-    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-    
-    <!-- Root logger -->
+    <!-- Root logger - solo CONSOLA -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
     </root>
     
 </configuration>
