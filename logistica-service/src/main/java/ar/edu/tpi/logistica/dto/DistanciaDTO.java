@@ -16,4 +16,5 @@ public class DistanciaDTO {
     private String destino;
     private double kilometros;          // Nombre exacto del documento
     private String duracionTexto;       // String según documento (ej: "2 horas 15 mins")
+    private Integer duracionMinutos;    // Duración en minutos para cálculos
 }

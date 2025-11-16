@@ -29,6 +29,9 @@ public class Ruta {
     @Column(name = "cantidad_depositos")
     private Integer cantidadDepositos = 0;
 
+    @Column(name = "costo_final")
+    private Double costoFinal;
+
     @Column(length = 400)
     private String observaciones;
 

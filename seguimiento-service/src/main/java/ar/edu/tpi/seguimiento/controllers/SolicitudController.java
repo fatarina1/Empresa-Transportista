@@ -22,8 +22,51 @@ public class SolicitudController {
     private SolicitudService solicitudService;
 
     @GetMapping
-    public ResponseEntity<List<SolicitudDTO>> listarTodas() {
-        List<SolicitudDTO> solicitudes = solicitudService.obtenerTodas();
+    public ResponseEntity<List<SolicitudDTO>> listarTodas(
+            @RequestHeader(value = "X-User-Id", required = false) String username,
+            @RequestHeader(value = "X-User-Roles", required = false) String roles) {
+        
+        List<SolicitudDTO> solicitudes;
+        
+        log.info("📥 Request recibido - Username: {}, Roles: {}", username, roles);
+        
+        // Si no hay información de usuario, devolver todas (para backwards compatibility)
+        if (username == null || username.isBlank()) {
+            log.warn("⚠️ No se recibió X-User-Id, devolviendo todas las solicitudes");
+            solicitudes = solicitudService.obtenerTodas();
+            return ResponseEntity.ok(solicitudes);
+        }
+        
+        // Si el username indica que es un CLIENTE (patrón: cliente01, cliente02, etc.)
+        if (username.startsWith("cliente")) {
+            try {
+                // Extraer el ID del username: "cliente01" -> 1, "cliente02" -> 2
+                String numStr = username.replace("cliente", "").replaceAll("^0+", "");
+                if (numStr.isEmpty()) numStr = "0"; // Edge case: "cliente00" -> 0
+                
+                Long clienteId = Long.parseLong(numStr);
+                log.info("👤 CLIENTE detectado - Username: {}, ClienteId extraído: {}", username, clienteId);
+                log.info("🔍 Filtrando solicitudes para clienteId: {}", clienteId);
+                
+                solicitudes = solicitudService.obtenerPorCliente(clienteId);
+                
+                log.info("✅ Solicitudes filtradas: {} solicitudes encontradas para cliente {}", 
+                        solicitudes.size(), clienteId);
+                
+                return ResponseEntity.ok(solicitudes);
+                
+            } catch (NumberFormatException e) {
+                log.error("❌ Error al extraer clienteId del username: {}", username);
+                // En caso de error, devolver lista vacía por seguridad
+                return ResponseEntity.ok(List.of());
+            }
+        }
+        
+        // Si es ADMIN, TRANSPORTISTA u otro rol, devolver todas las solicitudes
+        log.info("👨‍💼 Usuario {} (rol: {}) consultando TODAS las solicitudes", username, roles);
+        solicitudes = solicitudService.obtenerTodas();
+        log.info("✅ Total de solicitudes devueltas: {}", solicitudes.size());
+        
         return ResponseEntity.ok(solicitudes);
     }
 
@@ -92,6 +135,34 @@ public class SolicitudController {
             return ResponseEntity.ok(actualizada);
         } catch (IllegalArgumentException e) {
             log.error("Error al actualizar estado: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Actualizar costo final y tiempo real de una solicitud
+     * Llamado por logistica-service cuando se finaliza la última etapa
+     */
+    @PatchMapping("/{id}/costos")
+    public ResponseEntity<SolicitudDTO> actualizarCostosYTiempo(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Number costoFinal = (Number) body.get("costoFinal");
+            Integer tiempoRealMinutos = (Integer) body.get("tiempoRealMinutos");
+            
+            if (costoFinal == null || tiempoRealMinutos == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            SolicitudDTO actualizada = solicitudService.actualizarCostosYTiempo(
+                    id, 
+                    java.math.BigDecimal.valueOf(costoFinal.doubleValue()), 
+                    tiempoRealMinutos
+            );
+            return ResponseEntity.ok(actualizada);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al actualizar costos: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }

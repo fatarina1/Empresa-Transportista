@@ -1,9 +1,13 @@
 package ar.edu.tpi.logistica.services;
 
+import ar.edu.tpi.logistica.config.MetricasLogistica;
 import ar.edu.tpi.logistica.dto.RutaDTO;
 import ar.edu.tpi.logistica.entities.Ruta;
+import ar.edu.tpi.logistica.exceptions.DatosInvalidosException;
+import ar.edu.tpi.logistica.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.logistica.repositories.RutaRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +24,35 @@ public class RutaService {
     @Autowired
     private RutaRepository rutaRepository;
 
+    @Autowired
+    private MetricasLogistica metricas;
+
     public List<RutaDTO> obtenerTodas() {
-        return rutaRepository.findAll().stream()
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Obteniendo todas las rutas", correlationId);
+        
+        List<RutaDTO> rutas = rutaRepository.findAll().stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
+        
+        log.debug("[CID={}] Se encontraron {} rutas", correlationId, rutas.size());
+        return rutas;
     }
 
     public Optional<RutaDTO> obtenerPorId(Long id) {
-        return rutaRepository.findById(id)
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Buscando ruta con ID: {}", correlationId, id);
+        
+        Optional<RutaDTO> resultado = rutaRepository.findById(id)
                 .map(this::convertirADTO);
+        
+        if (resultado.isPresent()) {
+            log.debug("[CID={}] Ruta encontrada con ID: {}", correlationId, id);
+        } else {
+            log.debug("[CID={}] No se encontró ruta con ID: {}", correlationId, id);
+        }
+        
+        return resultado;
     }
 
     public Optional<RutaDTO> obtenerPorSolicitudId(Long solicitudId) {
@@ -38,10 +62,14 @@ public class RutaService {
 
     @Transactional
     public RutaDTO crear(RutaDTO rutaDTO) {
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Creando nueva ruta para solicitud: {}", correlationId, rutaDTO.getSolicitudExternaId());
+        
         // Validar que no exista ya una ruta para esta solicitud
         if (rutaDTO.getSolicitudExternaId() != null && 
             rutaRepository.findBySolicitudExternaId(rutaDTO.getSolicitudExternaId()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe una ruta para esta solicitud");
+            log.warn("[CID={}] Ya existe una ruta para la solicitud: {}", correlationId, rutaDTO.getSolicitudExternaId());
+            throw new DatosInvalidosException("Ya existe una ruta para esta solicitud");
         }
 
         Ruta ruta = convertirAEntidad(rutaDTO);
@@ -49,14 +77,19 @@ public class RutaService {
         ruta.setEstado(Ruta.EstadoRuta.PROPUESTA);
         
         Ruta guardada = rutaRepository.save(ruta);
-        log.info("Ruta creada: {}", guardada.getId());
+        metricas.incrementarRutasCreadas();
+        
+        log.info("[CID={}] Ruta creada exitosamente con ID: {}", correlationId, guardada.getId());
         return convertirADTO(guardada);
     }
 
     @Transactional
     public RutaDTO actualizar(Long id, RutaDTO rutaDTO) {
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Actualizando ruta con ID: {}", correlationId, id);
+        
         Ruta ruta = rutaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Ruta no encontrada"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", id));
 
         ruta.setCantidadTramos(rutaDTO.getCantidadTramos());
         ruta.setCantidadDepositos(rutaDTO.getCantidadDepositos());
@@ -67,32 +100,49 @@ public class RutaService {
         }
 
         Ruta actualizada = rutaRepository.save(ruta);
-        log.info("Ruta actualizada: {}", id);
+        log.info("[CID={}] Ruta actualizada exitosamente: {}", correlationId, id);
         return convertirADTO(actualizada);
     }
 
     @Transactional
     public void cambiarEstado(Long id, String nuevoEstado) {
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Cambiando estado de ruta {} a: {}", correlationId, id, nuevoEstado);
+        
         Ruta ruta = rutaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Ruta no encontrada"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", id));
 
         try {
             Ruta.EstadoRuta estado = Ruta.EstadoRuta.valueOf(nuevoEstado.toUpperCase());
+            Ruta.EstadoRuta estadoAnterior = ruta.getEstado();
             ruta.setEstado(estado);
             rutaRepository.save(ruta);
-            log.info("Estado de ruta {} cambiado a {}", id, nuevoEstado);
+            
+            // Incrementar métrica si se finaliza la ruta
+            if (estado == Ruta.EstadoRuta.FINALIZADA) {
+                metricas.incrementarRutasFinalizadas();
+                log.info("[CID={}] Ruta {} finalizada (estado: {} -> {})", correlationId, id, estadoAnterior, estado);
+            } else {
+                log.info("[CID={}] Estado de ruta {} cambiado de {} a {}", correlationId, id, estadoAnterior, estado);
+            }
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Estado inválido: " + nuevoEstado);
+            log.warn("[CID={}] Estado inválido proporcionado: {}", correlationId, nuevoEstado);
+            throw new DatosInvalidosException("Estado inválido: " + nuevoEstado);
         }
     }
 
     @Transactional
     public void eliminar(Long id) {
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Eliminando ruta con ID: {}", correlationId, id);
+        
         if (!rutaRepository.existsById(id)) {
-            throw new IllegalArgumentException("Ruta no encontrada");
+            log.warn("[CID={}] Intento de eliminar ruta inexistente: {}", correlationId, id);
+            throw new RecursoNoEncontradoException("Ruta", id);
         }
+        
         rutaRepository.deleteById(id);
-        log.info("Ruta eliminada: {}", id);
+        log.info("[CID={}] Ruta eliminada exitosamente: {}", correlationId, id);
     }
 
     private RutaDTO convertirADTO(Ruta ruta) {

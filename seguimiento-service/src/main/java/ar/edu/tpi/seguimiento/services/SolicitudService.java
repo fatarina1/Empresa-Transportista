@@ -1,14 +1,18 @@
 package ar.edu.tpi.seguimiento.services;
 
 import ar.edu.tpi.seguimiento.clients.LogisticaServiceClient;
+import ar.edu.tpi.seguimiento.config.MetricasSeguimiento;
 import ar.edu.tpi.seguimiento.dto.*;
 import ar.edu.tpi.seguimiento.entities.Cliente;
 import ar.edu.tpi.seguimiento.entities.Contenedor;
 import ar.edu.tpi.seguimiento.entities.Solicitud;
+import ar.edu.tpi.seguimiento.exceptions.DatosInvalidosException;
+import ar.edu.tpi.seguimiento.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.seguimiento.repositories.ClienteRepository;
 import ar.edu.tpi.seguimiento.repositories.ContenedorRepository;
 import ar.edu.tpi.seguimiento.repositories.SolicitudRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,9 @@ public class SolicitudService {
 
     @Autowired
     private LogisticaServiceClient logisticaClient;
+
+    @Autowired
+    private MetricasSeguimiento metricas;
 
     public List<SolicitudDTO> obtenerTodas() {
         return solicitudRepository.findAll().stream()
@@ -171,6 +178,7 @@ public class SolicitudService {
 
         String estadoAnterior = solicitud.getEstado();
         solicitud.setEstado(nuevoEstado);
+        solicitud.setUpdatedAt(LocalDateTime.now());
 
         if ("ENTREGADA".equals(nuevoEstado)) {
             solicitud.setFechaEntrega(LocalDateTime.now());
@@ -178,6 +186,26 @@ public class SolicitudService {
 
         Solicitud actualizada = solicitudRepository.save(solicitud);
         log.info("Solicitud {} cambió de estado: {} -> {}", id, estadoAnterior, nuevoEstado);
+        
+        return convertirADTO(actualizada);
+    }
+
+    /**
+     * Actualiza el costo final y tiempo real de una solicitud
+     * Llamado por logistica-service al finalizar todos los tramos
+     */
+    @Transactional
+    public SolicitudDTO actualizarCostosYTiempo(Long id, BigDecimal costoFinal, Integer tiempoRealMinutos) {
+        Solicitud solicitud = solicitudRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+
+        solicitud.setCostoFinal(costoFinal);
+        solicitud.setTiempoRealMin(tiempoRealMinutos);
+        solicitud.setUpdatedAt(LocalDateTime.now());
+
+        Solicitud actualizada = solicitudRepository.save(solicitud);
+        log.info("✅ Solicitud {} actualizada - Costo final: {} | Tiempo real: {} min", 
+                id, costoFinal, tiempoRealMinutos);
         
         return convertirADTO(actualizada);
     }

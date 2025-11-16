@@ -1,7 +1,7 @@
 {
 	"info": {
-		"name": "TPI Backend - Keycloak Auth",
-		"description": "Colección completa para probar autenticación y autorización con Keycloak.\n\n**Usuarios de prueba:**\n- cliente01 / Hola123 (rol: cliente)\n- admin01 / Clave123 (rol: admin)\n- transportista01 / Clave123 (rol: transportista)",
+		"name": "TPI Backend - Keycloak Auth + Nuevas Funcionalidades",
+		"description": "Colección completa para probar autenticación y autorización con Keycloak + TODAS las nuevas funcionalidades implementadas.\n\n**Usuarios de prueba:**\n- cliente01 / Hola123 (rol: cliente)\n- admin01 / Clave123 (rol: admin)\n- transportista01 / Clave123 (rol: transportista)\n\n**Nuevas funcionalidades incluidas:**\n✅ RF3: Calcular rutas tentativas con costos estimados\n✅ RF5: Consultar contenedores en depósito\n✅ RF8: Cálculo de costos reales completo\n✅ RN1: Validación de capacidad de camión\n✅ Flujo automático de estados (BORRADOR→EN_TRANSITO→ENTREGADA)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -38,6 +38,31 @@
 		{
 			"key": "access_token_transportista",
 			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "solicitud_id",
+			"value": "1",
+			"type": "default"
+		},
+		{
+			"key": "ruta_id",
+			"value": "1",
+			"type": "default"
+		},
+		{
+			"key": "tramo_id",
+			"value": "1",
+			"type": "default"
+		},
+		{
+			"key": "deposito_id",
+			"value": "1",
+			"type": "default"
+		},
+		{
+			"key": "camion_id",
+			"value": "1",
 			"type": "default"
 		}
 	],
@@ -571,6 +596,494 @@
 								"description": "✅ AUTORIZADO - Solo admin puede crear depósitos\n\nCampos obligatorios:\n- nombre (String, 120 chars max)\n- ubicacion (Object con id, referencia a una ubicación existente: {\"id\": 6})\n- costoEstadiaDiaria (Double, costo diario de estadía)\n- activo (Boolean, si el depósito está operativo)\n\n⚠️ IMPORTANTE: Primero debes crear una ubicación con el request 'Crear Ubicación (ADMIN)' y usar su ID aquí."
 							},
 							"response": []
+						},
+						{
+							"name": "🆕 RF5: Consultar Contenedores en Depósito (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/depositos/{{deposito_id}}/contenedores",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"depositos",
+										"{{deposito_id}}",
+										"contenedores"
+									]
+								},
+								"description": "🆕 **NUEVA FUNCIONALIDAD - RF5**\n\n✅ Consulta contenedores que están ACTUALMENTE en el depósito.\n\n**Lógica:**\n- Tramo anterior FINALIZADO en este depósito\n- Siguiente tramo NO INICIADO (contenedor esperando)\n- Muestra días de estadía calculados\n\n**Query params opcionales:**\n- `diasMinimo`: Filtrar contenedores con al menos X días en depósito\n\n**Ejemplo con filtro:**\n```\nGET /api/logistica/depositos/1/contenedores?diasMinimo=5\n```\n\n**Response esperado:**\n```json\n[\n  {\n    \"contenedorId\": 5,\n    \"identificacion\": \"CONT-001\",\n    \"solicitudId\": 12,\n    \"solicitudNumero\": \"SOL-12\",\n    \"fechaLlegada\": \"2025-11-10T14:30:00\",\n    \"diasEnDeposito\": 5,\n    \"pesoKg\": 8500.0,\n    \"volumenM3\": 35.5\n  }\n]\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "🆕 RF5: Contenedores en Depósito con filtro días (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/depositos/{{deposito_id}}/contenedores?diasMinimo=3",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"depositos",
+										"{{deposito_id}}",
+										"contenedores"
+									],
+									"query": [
+										{
+											"key": "diasMinimo",
+											"value": "3",
+											"description": "Filtrar contenedores con al menos 3 días en depósito"
+										}
+									]
+								},
+								"description": "🆕 **RF5 con filtro de días mínimos**\n\nDevuelve solo contenedores que lleven al menos 3 días (o el valor que especifiques) en el depósito.\n\n**Casos de uso:**\n- Identificar contenedores estancados\n- Alertas de estadías prolongadas\n- Optimización de espacio en depósito"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🆕 Rutas (Nuevas Funcionalidades)",
+					"item": [
+						{
+							"name": "🆕 RF3: Calcular Ruta Tentativa (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"depositosIntermediosIds\": [2, 3],\n  \"pesoKg\": 8500.0,\n  \"volumenM3\": 35.5\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/rutas/calcular-tentativa",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"rutas",
+										"calcular-tentativa"
+									]
+								},
+								"description": "🆕 **NUEVA FUNCIONALIDAD - RF3**\n\n✅ Calcula una ruta ANTES de crearla oficialmente.\n\n**Proceso:**\n1. Filtra camiones elegibles por peso y volumen del contenedor\n2. Calcula promedios de consumo y costo de camiones elegibles\n3. Obtiene distancias REALES desde GeoAPI (Google Maps)\n4. Calcula costos estimados por tramo\n5. Devuelve ruta completa con:\n   - Costo total estimado\n   - Tiempo total estimado\n   - Detalle por cada tramo\n   - Distancia total"
+							},
+							"response": []
+						},
+						{
+							"name": "🆕 RF3: Ruta Tentativa SIN depósitos intermedios",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"depositosIntermediosIds\": [],\n  \"pesoKg\": 5000.0,\n  \"volumenM3\": 25.0\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/rutas/calcular-tentativa",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"rutas",
+										"calcular-tentativa"
+									]
+								},
+								"description": "🆕 **RF3 - Ruta directa**\n\nCalcula ruta desde origen a destino SIN depósitos intermedios.\n\n**Casos de uso:**\n- Envíos urgentes\n- Cargas ligeras\n- Comparación de costos (con vs sin depósitos)"
+							},
+							"response": []
+						},
+						{
+							"name": "🆕 RF8: Obtener Costo Real de Ruta (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/rutas/{{ruta_id}}/costo-real",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"rutas",
+										"{{ruta_id}}",
+										"costo-real"
+									]
+								},
+								"description": "🆕 **NUEVA FUNCIONALIDAD - RF8**\n\n✅ Calcula el costo REAL de una ruta completada.\n\n**Fórmula completa:**\n```\nCosto Real = Σ(Costo por km) + Σ(Costo combustible) + \n             Σ(Costo estadías) + Σ(Cargos gestión)\n\nDonde:\n- Costo por km = camion.costoKmBase × distanciaKm\n- Costo combustible = (camion.consumoLitrosKm × distanciaKm) × valorLitroCombustible\n- Costo estadía = deposito.costoEstadiaDiaria × díasRealesEnDepósito\n- Cargo gestión = cargoGestionPorTramo × cantidadTramos\n```\n\n**⚠️ IMPORTANTE:**\n- Solo funciona si la ruta tiene todos los tramos FINALIZADOS\n- Usa datos REALES (no estimados)\n- Calcula días reales de estadía en cada depósito"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🆕 Tramos (Nuevas Funcionalidades)",
+					"item": [
+						{
+							"name": "🆕 RN1: Asignar Camión a Tramo (CON validación capacidad)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"camionId\": {{camion_id}}\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/asignar-camion",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"{{tramo_id}}",
+										"asignar-camion"
+									]
+								},
+								"description": "🆕 **MEJORADO - RN1: Validación de Capacidad**\n\n✅ Ahora valida AUTOMÁTICAMENTE:\n\n**1. Capacidad de peso:**\n- Obtiene el contenedor de la solicitud (via seguimiento-service)\n- Valida: `camion.capacidadPesoKg >= contenedor.pesoKg`\n- ❌ Error si no cumple: \"El camión no tiene capacidad de peso suficiente\"\n\n**2. Capacidad de volumen:**\n- Valida: `camion.capacidadVolumenM3 >= contenedor.volumenM3`\n- ❌ Error si no cumple: \"El camión no tiene capacidad de volumen suficiente\"\n\n**3. Disponibilidad:**\n- Valida que el camión NO esté en otro tramo INICIADO\n- ❌ Error si está ocupado: \"El camión ya está asignado a otro tramo en curso\""
+							},
+							"response": []
+						},
+						{
+							"name": "🆕 Iniciar Tramo (Cambio automático estado solicitud)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/iniciar",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"{{tramo_id}}",
+										"iniciar"
+									]
+								},
+								"description": "🆕 **MEJORADO - Flujo automático de estados**\n\n✅ Al iniciar el PRIMER tramo de la ruta:\n- Cambia automáticamente el estado de la solicitud a `EN_TRANSITO`\n- Llama a seguimiento-service vía RestClient\n- Log: \"✅ Solicitud {id} actualizada a EN_TRANSITO\"\n\n**Estados de solicitud:**\n```\nBORRADOR → PROGRAMADA → EN_TRANSITO → ENTREGADA\n                           ↑\n                    Al iniciar 1er tramo\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "🆕 Finalizar Tramo (Cálculo automático si es último)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/finalizar",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"{{tramo_id}}",
+										"finalizar"
+									]
+								},
+								"description": "🆕 **MEJORADO - Automatización completa al finalizar ÚLTIMO tramo**\n\n✅ Si es el último tramo de la ruta, automáticamente:\n\n**1. Calcula costo real (RF8):**\n- Llama a `CostoService.calcularCostoReal(rutaId)`\n- Aplica fórmula completa: km + combustible + estadías + gestión\n\n**2. Actualiza ruta:**\n- Guarda `Ruta.costoFinal` con el costo calculado\n\n**3. Actualiza solicitud (vía RestClient):**\n- PATCH `/api/solicitudes/{id}/costos`\n- Envía `costoFinal` y `tiempoRealMinutos`\n\n**4. Cambia estado solicitud:**\n- PATCH `/api/solicitudes/{id}/estado`\n- Nueva estado: `ENTREGADA`"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Todos los Tramos (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos"
+									]
+								},
+								"description": "✅ **TRANSPORTISTA - Listar todos los tramos**\n\n**Casos de uso:**\n- Ver todos los tramos asignados al transportista\n- Identificar tramos PROGRAMADOS (listos para iniciar)\n- Ver tramos INICIADOS (en curso)\n- Ver historial de tramos FINALIZADOS\n\n**Estados posibles:**\n- ESTIMADO (recién creado, sin camión)\n- PROGRAMADO (camión asignado, listo para iniciar)\n- INICIADO (en tránsito)\n- FINALIZADO (completado)"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Tramos por Estado (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/estado/PROGRAMADO",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"estado",
+										"PROGRAMADO"
+									]
+								},
+								"description": "✅ **TRANSPORTISTA - Filtrar tramos por estado**\n\n**Estados válidos:**\n- `ESTIMADO` - Tramos recién creados, sin camión asignado\n- `PROGRAMADO` - Camión asignado, listos para iniciar\n- `INICIADO` - Tramos en curso\n- `FINALIZADO` - Tramos completados\n\n**Ejemplos de uso:**\n```\nGET /tramos/estado/PROGRAMADO  → Ver qué tramos puedo iniciar\nGET /tramos/estado/INICIADO    → Ver qué tramos están en curso\nGET /tramos/estado/FINALIZADO  → Ver historial completado\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Tramos de una Ruta (ADMIN)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/ruta/{{ruta_id}}",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"ruta",
+										"{{ruta_id}}"
+									]
+								},
+								"description": "✅ **ADMIN - Listar tramos de una ruta específica**\n\n**Útil para:**\n- Ver cuántos tramos tiene la ruta\n- Identificar cuál es el ÚLTIMO tramo (mayor orden)\n- Verificar el estado de cada tramo\n- **Validar antes de consultar costo real** (todos deben estar FINALIZADOS)\n\n**Ejemplo de respuesta:**\n```json\n[\n  {\n    \"id\": 1,\n    \"orden\": 1,\n    \"estado\": \"FINALIZADO\",\n    \"ubicacionOrigen\": {\"nombre\": \"Córdoba\"},\n    \"ubicacionDestino\": {\"nombre\": \"Rosario\"}\n  },\n  {\n    \"id\": 2,\n    \"orden\": 2,\n    \"estado\": \"INICIADO\",\n    \"ubicacionOrigen\": {\"nombre\": \"Rosario\"},\n    \"ubicacionDestino\": {\"nombre\": \"Buenos Aires\"}\n  }\n]\n```\n\n💡 **Tip**: Tramo con orden más alto = ÚLTIMO tramo de la ruta"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Listar Tramos de un Camión (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/camion/{{camion_id}}",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"camion",
+										"{{camion_id}}"
+									]
+								},
+								"description": "✅ **TRANSPORTISTA - Listar tramos asignados a un camión**\n\n**Casos de uso:**\n- Ver qué tramos tiene asignados mi camión\n- Verificar si un camión está ocupado\n- Ver historial de tramos de un camión\n\n**Ejemplo:**\n```\nGET /tramos/camion/1  → Ver todos los tramos del camión 1\n```\n\nSi el camión tiene un tramo en estado INICIADO, no se le puede asignar otro tramo (validación RN1)."
+							},
+							"response": []
+						},
+						{
+							"name": "🔄 Iniciar Tramo (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/iniciar",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"{{tramo_id}}",
+										"iniciar"
+									]
+								},
+								"description": "🔄 **TRANSPORTISTA - Iniciar un tramo (RF7)**\n\n**Transición de estado:** PROGRAMADO → INICIADO\n\n**Prerrequisitos:**\n- Tramo debe estar en estado PROGRAMADO\n- Camión debe estar asignado\n\n**Qué hace automáticamente:**\n- Cambia estado a INICIADO\n- Registra fecha_inicio_real con timestamp actual\n- Si es el PRIMER tramo de la ruta, actualiza la solicitud a estado EN_TRANSITO\n\n**Ejemplo:**\n```\nPATCH /tramos/1/iniciar\n(sin body)\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Finalizar Tramo (TRANSPORTISTA)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_transportista}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/finalizar",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"tramos",
+										"{{tramo_id}}",
+										"finalizar"
+									]
+								},
+								"description": "✅ **TRANSPORTISTA - Finalizar un tramo (RF7 + RF8)**\n\n**Transición de estado:** INICIADO → FINALIZADO\n\n**Prerrequisitos:**\n- Tramo debe estar en estado INICIADO\n- Debe tener fecha_inicio_real registrada\n\n**Qué hace automáticamente:**\n- Cambia estado a FINALIZADO\n- Registra fecha_fin_real con timestamp actual\n- Libera el camión (disponible = true)\n- Calcula duración real en minutos\n\n**Si es el ÚLTIMO tramo de la ruta:**\n- Calcula el costo real total de la ruta (RF8)\n- Actualiza ruta.costoFinal\n- Actualiza la solicitud con costoFinal y tiempoReal\n- Cambia la solicitud a estado ENTREGADA\n\n**Importante:**\n- El costo real se calcula automáticamente basado en:\n  - Distancia total recorrida\n  - Consumo de combustible estimado\n  - Cargo por gestión por tramo\n  - Tiempo real vs estimado (penalizaciones/bonificaciones)\n- Para consultar el costo real completo: GET /rutas/{id}/costo-real (requiere todos los tramos FINALIZADOS)\n\n**Ejemplo:**\n```\nPATCH /tramos/3/finalizar\n(sin body - todo es automático)\n```"
+							},
+							"response": []
 						}
 					]
 				},
@@ -658,6 +1171,60 @@
 					"item": [
 						{
 							"name": "✅ Listar Solicitudes (CLIENTE)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// 🔍 VALIDACIÓN DE FILTRADO POR ROL CLIENTE",
+											"",
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    console.log(\"📦 Total de solicitudes recibidas:\", jsonData.length);",
+											"    ",
+											"    // Verificar que todas las solicitudes sean del cliente 1",
+											"    var todasDelCliente1 = jsonData.every(function(sol) {",
+											"        return sol.clienteId === 1;",
+											"    });",
+											"    ",
+											"    if (todasDelCliente1 && jsonData.length > 0) {",
+											"        console.log(\"✅ FILTRADO CORRECTO: Todas las solicitudes son del cliente 1\");",
+											"        pm.test(\"✅ Filtrado por rol CLIENTE funciona correctamente\", function () {",
+											"            pm.expect(todasDelCliente1).to.be.true;",
+											"            pm.expect(jsonData.length).to.be.greaterThan(0);",
+											"        });",
+											"        ",
+											"        // Mostrar IDs de solicitudes recibidas",
+											"        var ids = jsonData.map(function(s) { return s.id; });",
+											"        console.log(\"   IDs de solicitudes:\", ids);",
+											"    } else if (jsonData.length === 0) {",
+											"        console.log(\"⚠️ ADVERTENCIA: No se encontraron solicitudes para el cliente 1\");",
+											"        pm.test(\"✅ Sin solicitudes para este cliente\", function () {",
+											"            pm.expect(jsonData.length).to.equal(0);",
+											"        });",
+											"    } else {",
+											"        console.log(\"❌ ERROR: Se encontraron solicitudes de otros clientes\");",
+											"        var otrasIds = jsonData.filter(function(s) { ",
+											"            return s.clienteId !== 1; ",
+											"        }).map(function(s) { ",
+											"            return {id: s.id, clienteId: s.clienteId}; ",
+											"        });",
+											"        console.log(\"   Solicitudes incorrectas:\", JSON.stringify(otrasIds));",
+											"        pm.test(\"❌ FILTRADO FALLIDO: Hay solicitudes de otros clientes\", function () {",
+											"            pm.expect(todasDelCliente1).to.be.true;",
+											"        });",
+											"    }",
+											"} else {",
+											"    console.log(\"❌ ERROR: Código de respuesta inesperado:\", pm.response.code);",
+											"    pm.test(\"Código de respuesta debe ser 200\", function () {",
+											"        pm.response.to.have.status(200);",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -682,12 +1249,76 @@
 										"solicitudes"
 									]
 								},
-								"description": "✅ AUTORIZADO - Cliente puede ver solicitudes"
+								"description": "✅ AUTORIZADO - Cliente puede ver solicitudes\n\n**TEST AUTOMÁTICO:**\n- Valida que todas las solicitudes sean del cliente 1\n- Verifica que el filtrado por rol CLIENTE funciona\n- Muestra en consola los IDs recibidos"
 							},
 							"response": []
 						},
 						{
 							"name": "✅ Listar Solicitudes (ADMIN)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// 🔍 VALIDACIÓN DE ACCESO COMPLETO PARA ADMIN",
+											"",
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    console.log(\"📦 Total de solicitudes recibidas:\", jsonData.length);",
+											"    ",
+											"    // Obtener todos los clienteIds únicos",
+											"    var clienteIds = jsonData",
+											"        .map(function(s) { return s.clienteId; })",
+											"        .filter(function(value, index, self) { ",
+											"            return self.indexOf(value) === index; ",
+											"        })",
+											"        .sort(function(a, b) { return a - b; });",
+											"    ",
+											"    console.log(\"👥 Clientes presentes en las solicitudes:\", clienteIds);",
+											"    ",
+											"    if (jsonData.length > 0) {",
+											"        pm.test(\"✅ ADMIN recibe todas las solicitudes\", function () {",
+											"            pm.expect(jsonData.length).to.be.greaterThan(0);",
+											"        });",
+											"        ",
+											"        // Verificar que hay solicitudes de múltiples clientes",
+											"        if (clienteIds.length > 1) {",
+											"            console.log(\"✅ ACCESO COMPLETO: Solicitudes de\", clienteIds.length, \"clientes diferentes\");",
+											"            pm.test(\"✅ ADMIN ve solicitudes de múltiples clientes\", function () {",
+											"                pm.expect(clienteIds.length).to.be.greaterThan(1);",
+											"            });",
+											"        } else if (clienteIds.length === 1) {",
+											"            console.log(\"⚠️ ADVERTENCIA: Solo hay solicitudes de un cliente (ID:\", clienteIds[0], \")\");",
+											"            pm.test(\"⚠️ Solo hay solicitudes de un cliente\", function () {",
+											"                pm.expect(clienteIds.length).to.equal(1);",
+											"            });",
+											"        }",
+											"        ",
+											"        // Mostrar distribución de solicitudes por cliente",
+											"        console.log(\"\\n📊 Distribución de solicitudes:\");",
+											"        clienteIds.forEach(function(clienteId) {",
+											"            var count = jsonData.filter(function(s) { ",
+											"                return s.clienteId === clienteId; ",
+											"            }).length;",
+											"            console.log(\"   Cliente\", clienteId + \":\", count, \"solicitudes\");",
+											"        });",
+											"    } else {",
+											"        console.log(\"⚠️ ADVERTENCIA: No se encontraron solicitudes en el sistema\");",
+											"        pm.test(\"⚠️ Sistema sin solicitudes\", function () {",
+											"            pm.expect(jsonData.length).to.equal(0);",
+											"        });",
+											"    }",
+											"} else {",
+											"    console.log(\"❌ ERROR: Código de respuesta inesperado:\", pm.response.code);",
+											"    pm.test(\"Código de respuesta debe ser 200\", function () {",
+											"        pm.response.to.have.status(200);",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -712,7 +1343,7 @@
 										"solicitudes"
 									]
 								},
-								"description": "✅ AUTORIZADO - Admin puede ver todas las solicitudes"
+								"description": "✅ AUTORIZADO - Admin puede ver todas las solicitudes\n\n**TEST AUTOMÁTICO:**\n- Verifica que el ADMIN ve todas las solicitudes del sistema\n- Valida que hay solicitudes de múltiples clientes\n- Muestra distribución de solicitudes por cliente en consola"
 							},
 							"response": []
 						},

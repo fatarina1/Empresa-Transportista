@@ -1,5 +1,6 @@
 package ar.edu.tpi.gateway.config;
 
+import ar.edu.tpi.gateway.filter.UserContextFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -24,7 +25,8 @@ public class GatewayConfig {
             RouteLocatorBuilder builder,
             @Value("${api-gateway.url-logistica-service}") String urlLogistica,
             @Value("${api-gateway.url-seguimiento-service}") String urlSeguimiento,
-            @Value("${api-gateway.url-geoapi-service}") String urlGeoapi) {
+            @Value("${api-gateway.url-geoapi-service}") String urlGeoapi,
+            UserContextFilter userContextFilter) {
         
         return builder.routes()
                 // ============================================
@@ -89,6 +91,7 @@ public class GatewayConfig {
                         .path("/api/seguimiento/solicitudes/**")
                         .filters(f -> f
                                 .stripPrefix(2)
+                                .filter(userContextFilter.apply(new UserContextFilter.Config()))
                                 .addRequestHeader("X-Gateway-Service", "seguimiento")
                                 .addResponseHeader("X-Processed-By", "API-Gateway"))
                         .uri(urlSeguimiento))

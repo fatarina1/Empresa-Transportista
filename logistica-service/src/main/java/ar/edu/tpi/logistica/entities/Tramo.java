@@ -78,7 +78,7 @@ public class Tramo {
     }
 
     public enum EstadoTramo {
-        ESTIMADO, ASIGNADO, INICIADO, FINALIZADO
+        PROGRAMADO, ESTIMADO, ASIGNADO, INICIADO, FINALIZADO
     }
 
 }
