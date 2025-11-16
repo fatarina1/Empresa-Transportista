@@ -41,13 +41,13 @@ docker compose up -d
 
 ## 🏗️ Arquitectura
 
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| **API Gateway** | 8080 | Punto de entrada único + autenticación |
-| **Keycloak** | 8180 | Gestión de usuarios y autenticación |
-| **Seguimiento Service** | 8081 | Clientes, solicitudes, contenedores |
-| **Logística Service** | 8082 | Rutas, tramos, camiones, depósitos |
-| **GeoAPI** | 8083 | Cálculo de distancias |
+| Servicio | Puerto | Swagger UI | Descripción |
+|----------|--------|------------|-------------|
+| **API Gateway** | 8080 | - | Punto de entrada único + autenticación |
+| **Keycloak** | 8180 | - | Gestión de usuarios y autenticación |
+| **Seguimiento Service** | 8081 | [/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html) | Clientes, solicitudes, contenedores |
+| **Logística Service** | 8082 | [/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html) | Rutas, tramos, camiones, depósitos |
+| **GeoAPI** | 8083 | [/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html) | Cálculo de distancias |
 
 ### Flujo de Datos
 
@@ -90,14 +90,21 @@ GET /api/logistica/depositos/2/contenedores  # Mendoza (7 días)
 2. **Login:** Ejecutar request según rol (ADMIN/CLIENTE/TRANSPORTISTA)
 3. **Probar endpoints:** Token se guarda automáticamente
 
+**💡 Alternativa: Usar Swagger UI**
+- Seguimiento: http://localhost:8081/swagger-ui/index.html
+- Logística: http://localhost:8082/swagger-ui/index.html
+- GeoAPI: http://localhost:8083/swagger-ui/index.html
+
 ---
 
 ## 🛠️ Comandos Útiles
 
-### Ver logs
+### Ver logs centralizados
 ```bash
-docker logs -f infra-logistica-service-1
-docker logs -f infra-seguimiento-service-1
+cd infra
+docker compose logs -f                    # Todos los servicios
+docker compose logs -f logistica-service  # Un servicio específico
+docker compose logs | grep ERROR          # Solo errores
 ```
 
 ### Reiniciar un servicio

@@ -54,7 +54,8 @@
       context: ../seguimiento-service
       dockerfile: Dockerfile
     image: tpi/seguimiento-service:latest
-    # SIN PUERTO EXPUESTO - solo accesible internamente
+    ports:
+      - "8081:8081"  # Expuesto solo para desarrollo (Swagger UI)
     environment:
       - LOG_LEVEL=INFO
       - LOGISTICA_URL=http://logistica-service:8082
@@ -76,7 +77,8 @@
       context: ../logistica-service
       dockerfile: Dockerfile
     image: tpi/logistica-service:latest
-    # SIN PUERTO EXPUESTO - solo accesible internamente
+    ports:
+      - "8082:8082"  # Expuesto solo para desarrollo (Swagger UI)
     environment:
       - VALOR_LITRO_COMBUSTIBLE=${VALOR_LITRO_COMBUSTIBLE:-450.0}
     depends_on:
@@ -91,7 +93,8 @@
       context: ../geoapi
       dockerfile: Dockerfile
     image: tpi/geoapi:latest
-    # SIN PUERTO EXPUESTO - solo accesible internamente
+    ports:
+      - "8083:8083"  # Expuesto solo para desarrollo (Swagger UI)
     environment:
       - GOOGLE_MAPS_APIKEY=${GOOGLE_MAPS_APIKEY}
     networks:

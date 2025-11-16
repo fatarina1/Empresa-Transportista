@@ -6,5 +6,10 @@ target/
 *.war
 *.ear
 
+### Environment files (secrets)
+.env
+**/.env
+
+### Old project folders
 unihelp-backend-main
 service-gitano-stock-main
