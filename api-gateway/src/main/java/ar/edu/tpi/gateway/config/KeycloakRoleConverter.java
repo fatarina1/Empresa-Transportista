@@ -19,32 +19,45 @@ public class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedA
 
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {
-        // Extraer resource_access del JWT
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+        
+        // OPCIÓN 1: Intentar extraer desde resource_access.tpi-backend-client.roles
         Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
-        
-        if (resourceAccess == null) {
-            return Collections.emptyList();
+        if (resourceAccess != null) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> tpiBackendClient = (Map<String, Object>) resourceAccess.get("tpi-backend-client");
+            
+            if (tpiBackendClient != null) {
+                @SuppressWarnings("unchecked")
+                List<String> clientRoles = (List<String>) tpiBackendClient.get("roles");
+                
+                if (clientRoles != null) {
+                    clientRoles.stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .forEach(authorities::add);
+                }
+            }
         }
         
-        // Buscar el cliente 'tpi-backend-client'
-        @SuppressWarnings("unchecked")
-        Map<String, Object> tpiBackendClient = (Map<String, Object>) resourceAccess.get("tpi-backend-client");
-        
-        if (tpiBackendClient == null) {
-            return Collections.emptyList();
+        // OPCIÓN 2 (FALLBACK): Si no hay roles de cliente, usar realm_access.roles
+        if (authorities.isEmpty()) {
+            Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+            if (realmAccess != null) {
+                @SuppressWarnings("unchecked")
+                List<String> realmRoles = (List<String>) realmAccess.get("roles");
+                
+                if (realmRoles != null) {
+                    // Filtrar solo los roles que nos interesan (admin, cliente, transportista)
+                    realmRoles.stream()
+                            .filter(role -> role.equals("admin") || 
+                                          role.equals("cliente") || 
+                                          role.equals("transportista"))
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .forEach(authorities::add);
+                }
+            }
         }
         
-        // Extraer los roles
-        @SuppressWarnings("unchecked")
-        List<String> roles = (List<String>) tpiBackendClient.get("roles");
-        
-        if (roles == null) {
-            return Collections.emptyList();
-        }
-        
-        // Convertir a GrantedAuthority con prefijo ROLE_
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .collect(Collectors.toList());
+        return authorities;
     }
 }
