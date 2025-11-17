@@ -31,11 +31,15 @@ public class DataSeeder {
     @Bean
     CommandLineRunner initDatabase() {
         return args -> {
-            // Solo cargar datos si la BD está vacía
-            if (camionRepository.count() > 0) {
-                log.info("Base de datos ya contiene datos. Saltando seeder.");
-                return;
-            }
+            // Eliminar todos los datos antes de cargar
+            log.info("Forzando recarga de datos de prueba: eliminando datos existentes...");
+            tramoRepository.deleteAll();
+            rutaRepository.deleteAll();
+            tarifaVolumenRepository.deleteAll();
+            depositoRepository.deleteAll();
+            ubicacionRepository.deleteAll();
+            camionRepository.deleteAll();
+            configuracionGeneralRepository.deleteAll();
 
             log.info("Iniciando carga de datos de prueba...");
 
@@ -49,6 +53,7 @@ public class DataSeeder {
             camion1.setCostoKmBase(80.0);
             camion1.setConsumoPromedioLitrosKm(0.35);
             camion1.setDisponible(true);
+                camion1.setTransportistaId(1L); // Asociar transportista de prueba
             camion1.setCreatedAt(LocalDateTime.now());
             camionRepository.save(camion1);
 

@@ -68,6 +68,7 @@ public class SecurityConfig {
                 
                 // TARIFAS
                 .pathMatchers("/api/logistica/tarifas/**").hasRole("admin")
+                .pathMatchers("/api/logistica/tarifas-volumen/**").hasRole("admin")
                 
                 // ============================================
                 // SEGUIMIENTO SERVICE - RBAC

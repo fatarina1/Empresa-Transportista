@@ -1665,6 +1665,83 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Tarifas de Volumen",
+			"item": [
+				{
+					"name": "Listar todas las tarifas",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tarifas-volumen",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "logistica", "tarifas-volumen"]
+						},
+						"description": "Devuelve todas las tarifas de volumen registradas."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar tarifa por ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tarifas-volumen/{{tarifa_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "logistica", "tarifas-volumen", "{{tarifa_id}}"]
+						},
+						"description": "Devuelve la tarifa de volumen correspondiente al ID especificado."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar tarifa por volumen",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tarifas-volumen/por-volumen/{{volumen}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "logistica", "tarifas-volumen", "por-volumen", "{{volumen}}"]
+						},
+						"description": "Devuelve la tarifa de volumen cuyo rango incluye el volumen especificado."
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }

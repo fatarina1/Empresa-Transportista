@@ -82,6 +82,14 @@ public class GatewayConfig {
                                 .addRequestHeader("X-Gateway-Service", "logistica"))
                         .uri(urlLogistica))
                 
+                // Tarifas de volumen (ruta separada para cubrir /tarifas-volumen y subpaths)
+                .route("logistica-tarifas-volumen", r -> r
+                        .path("/api/logistica/tarifas-volumen", "/api/logistica/tarifas-volumen/**")
+                        .filters(f -> f
+                                .stripPrefix(2)
+                                .addRequestHeader("X-Gateway-Service", "logistica"))
+                        .uri(urlLogistica))
+                
                 // ============================================
                 // RUTAS PARA SEGUIMIENTO-SERVICE
                 // ============================================

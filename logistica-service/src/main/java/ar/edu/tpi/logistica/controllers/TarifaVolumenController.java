@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ar.edu.tpi.logistica.entities.TarifaVolumen;
 import ar.edu.tpi.logistica.repositories.TarifaVolumenRepository;
+import ar.edu.tpi.logistica.dto.TarifaVolumenDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,35 +20,40 @@ public class TarifaVolumenController {
     private TarifaVolumenRepository tarifaRepository;
 
     @GetMapping
-    public List<TarifaVolumen> listarTodos() {
-        return tarifaRepository.findAll();
+    public List<TarifaVolumenDTO> listarTodos() {
+        return tarifaRepository.findAll().stream()
+            .map(this::toDTO)
+            .toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TarifaVolumen> obtenerPorId(@PathVariable Long id) {
+    public ResponseEntity<TarifaVolumenDTO> obtenerPorId(@PathVariable Long id) {
         Optional<TarifaVolumen> t = tarifaRepository.findById(id);
-        return t.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return t.map(this::toDTO).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/por-volumen/{volumen}")
-    public List<TarifaVolumen> obtenerPorVolumen(@PathVariable String volumen) {
+    public List<TarifaVolumenDTO> obtenerPorVolumen(@PathVariable String volumen) {
         BigDecimal v = new BigDecimal(volumen);
         // busca tarifas cuyo rango incluya el volumen dado
-        return tarifaRepository.findByVolumenMinM3LessThanEqualAndVolumenMaxM3GreaterThanEqual(v, v);
+        return tarifaRepository.findByVolumenMinM3LessThanEqualAndVolumenMaxM3GreaterThanEqual(v, v)
+            .stream()
+            .map(this::toDTO)
+            .toList();
     }
 
     @PostMapping
-    public ResponseEntity<TarifaVolumen> crear(@RequestBody TarifaVolumen tarifa) {
+    public ResponseEntity<TarifaVolumenDTO> crear(@RequestBody TarifaVolumen tarifa) {
         TarifaVolumen creado = tarifaRepository.save(tarifa);
-        return ResponseEntity.ok(creado);
+        return ResponseEntity.ok(toDTO(creado));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TarifaVolumen> actualizar(@PathVariable Long id, @RequestBody TarifaVolumen tarifa) {
+    public ResponseEntity<TarifaVolumenDTO> actualizar(@PathVariable Long id, @RequestBody TarifaVolumen tarifa) {
         if (!tarifaRepository.existsById(id)) return ResponseEntity.notFound().build();
         tarifa.setId(id);
         TarifaVolumen actualizado = tarifaRepository.save(tarifa);
-        return ResponseEntity.ok(actualizado);
+        return ResponseEntity.ok(toDTO(actualizado));
     }
 
     @DeleteMapping("/{id}")
@@ -55,5 +61,13 @@ public class TarifaVolumenController {
         if (!tarifaRepository.existsById(id)) return ResponseEntity.notFound().build();
         tarifaRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+    private TarifaVolumenDTO toDTO(TarifaVolumen tarifa) {
+        return new TarifaVolumenDTO(
+            tarifa.getId(),
+            tarifa.getVolumenMinM3(),
+            tarifa.getVolumenMaxM3(),
+            tarifa.getCostoKmBase()
+        );
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import ar.edu.tpi.logistica.entities.Camion;
+import ar.edu.tpi.logistica.dto.CamionDTO;
 import ar.edu.tpi.logistica.services.CamionService;
 
 import java.util.List;
@@ -19,16 +20,18 @@ public class CamionController {
 
     // Listar todos los camiones
     @GetMapping
-    public List<Camion> listarTodos() {
-        return camionService.obtenerTodos();
+    public List<CamionDTO> listarTodos() {
+        return camionService.obtenerTodos().stream()
+            .map(this::toDTO)
+            .toList();
     }
 
     //obtener por dominio
     @GetMapping("/{dominio}")
-    public ResponseEntity<Camion> obtenerPorDominio(@PathVariable String dominio) {
+    public ResponseEntity<CamionDTO> obtenerPorDominio(@PathVariable String dominio) {
         Camion camion = camionService.obtenerPorDominio(dominio);
         if (camion != null) {
-            return ResponseEntity.ok(camion);
+            return ResponseEntity.ok(toDTO(camion));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -36,17 +39,17 @@ public class CamionController {
     
     // Crear nuevo camión
     @PostMapping
-    public ResponseEntity<Camion> crear(@RequestBody Camion camion) {
+    public ResponseEntity<CamionDTO> crear(@RequestBody Camion camion) {
         Camion creado = camionService.guardar(camion);
-        return ResponseEntity.ok(creado);
+        return ResponseEntity.ok(toDTO(creado));
     }
 
     // Actualizar camión por dominio
     @PutMapping("/{dominio}")
-    public ResponseEntity<Camion> actualizar(@PathVariable String dominio, @RequestBody Camion camion) {
+    public ResponseEntity<CamionDTO> actualizar(@PathVariable String dominio, @RequestBody Camion camion) {
         camion.setDominio(dominio);
         Camion actualizado = camionService.guardar(camion);
-        return ResponseEntity.ok(actualizado);
+        return ResponseEntity.ok(toDTO(actualizado));
     }
 
     // Eliminar camión por id
@@ -58,8 +61,24 @@ public class CamionController {
 
     // Listar camiones disponibles
     @GetMapping("/disponibles")
-    public List<Camion> listarDisponibles() {
-        return camionService.obtenerDisponibles();
+    public List<CamionDTO> listarDisponibles() {
+        return camionService.obtenerDisponibles().stream()
+            .map(this::toDTO)
+            .toList();
+    }
+
+    private CamionDTO toDTO(Camion camion) {
+        return new CamionDTO(
+            camion.getId(),
+            camion.getDominio(),
+            camion.getCapacidadPesoKg(),
+            camion.getCapacidadVolumenM3(),
+            camion.getCostoKmBase(),
+            camion.getConsumoPromedioLitrosKm(),
+            camion.getDisponible(),
+            camion.getTransportistaId(),
+            camion.getCreatedAt()
+        );
     }
 
     // Verificar disponibilidad para peso y volumen específicos
@@ -70,4 +89,6 @@ public class CamionController {
         boolean disponible = camionService.verificarDisponibilidad(peso, volumen);
         return ResponseEntity.ok(disponible);
     }
+
+    
 }
