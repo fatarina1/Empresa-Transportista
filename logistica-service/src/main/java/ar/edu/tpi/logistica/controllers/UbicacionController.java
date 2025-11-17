@@ -44,16 +44,17 @@ public class UbicacionController {
     }
 
     @PostMapping
-    public ResponseEntity<UbicacionDTO> crear(@RequestBody Ubicacion ubicacion) {
-        Ubicacion guardada = ubicacionRepository.save(ubicacion);
+    public ResponseEntity<UbicacionDTO> crear(@RequestBody UbicacionDTO ubicacionDTO) {
+        Ubicacion guardada = ubicacionRepository.save(convertirAEntidad(ubicacionDTO));
         return ResponseEntity.ok(convertirADTO(guardada));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UbicacionDTO> actualizar(@PathVariable Long id, @RequestBody Ubicacion ubicacion) {
+    public ResponseEntity<UbicacionDTO> actualizar(@PathVariable Long id, @RequestBody UbicacionDTO ubicacionDTO) {
         if (!ubicacionRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        Ubicacion ubicacion = convertirAEntidad(ubicacionDTO);
         ubicacion.setId(id);
         Ubicacion actualizada = ubicacionRepository.save(ubicacion);
         return ResponseEntity.ok(convertirADTO(actualizada));
@@ -74,5 +75,16 @@ public class UbicacionController {
         dto.setLongitud(ubicacion.getLongitud());
         dto.setTipo(ubicacion.getTipo());
         return dto;
+    }
+
+    private Ubicacion convertirAEntidad(UbicacionDTO dto) {
+        Ubicacion ubicacion = new Ubicacion();
+        ubicacion.setId(dto.getId());
+        ubicacion.setNombre(dto.getNombre());
+        ubicacion.setDireccion(dto.getDireccion());
+        ubicacion.setLatitud(dto.getLatitud());
+        ubicacion.setLongitud(dto.getLongitud());
+        ubicacion.setTipo(dto.getTipo());
+        return ubicacion;
     }
 }

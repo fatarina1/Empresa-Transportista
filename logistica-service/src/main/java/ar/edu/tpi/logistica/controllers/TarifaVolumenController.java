@@ -3,9 +3,9 @@ package ar.edu.tpi.logistica.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ar.edu.tpi.logistica.dto.TarifaVolumenDTO;
 import ar.edu.tpi.logistica.entities.TarifaVolumen;
 import ar.edu.tpi.logistica.repositories.TarifaVolumenRepository;
-import ar.edu.tpi.logistica.dto.TarifaVolumenDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -43,16 +43,17 @@ public class TarifaVolumenController {
     }
 
     @PostMapping
-    public ResponseEntity<TarifaVolumenDTO> crear(@RequestBody TarifaVolumen tarifa) {
-        TarifaVolumen creado = tarifaRepository.save(tarifa);
+    public ResponseEntity<TarifaVolumenDTO> crear(@RequestBody TarifaVolumenDTO tarifa) {
+        TarifaVolumen creado = tarifaRepository.save(toEntity(tarifa));
         return ResponseEntity.ok(toDTO(creado));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TarifaVolumenDTO> actualizar(@PathVariable Long id, @RequestBody TarifaVolumen tarifa) {
+    public ResponseEntity<TarifaVolumenDTO> actualizar(@PathVariable Long id, @RequestBody TarifaVolumenDTO tarifa) {
         if (!tarifaRepository.existsById(id)) return ResponseEntity.notFound().build();
-        tarifa.setId(id);
-        TarifaVolumen actualizado = tarifaRepository.save(tarifa);
+        TarifaVolumen entidad = toEntity(tarifa);
+        entidad.setId(id);
+        TarifaVolumen actualizado = tarifaRepository.save(entidad);
         return ResponseEntity.ok(toDTO(actualizado));
     }
 
@@ -69,5 +70,14 @@ public class TarifaVolumenController {
             tarifa.getVolumenMaxM3(),
             tarifa.getCostoKmBase()
         );
+    }
+
+    private TarifaVolumen toEntity(TarifaVolumenDTO dto) {
+        TarifaVolumen tarifa = new TarifaVolumen();
+        tarifa.setId(dto.getId());
+        tarifa.setVolumenMinM3(dto.getVolumenMinM3());
+        tarifa.setVolumenMaxM3(dto.getVolumenMaxM3());
+        tarifa.setCostoKmBase(dto.getCostoKmBase());
+        return tarifa;
     }
 }

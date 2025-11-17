@@ -1,18 +1,16 @@
 package ar.edu.tpi.logistica.controllers;
 
+import ar.edu.tpi.logistica.dto.CamionDTO;
+import ar.edu.tpi.logistica.entities.Camion;
+import ar.edu.tpi.logistica.services.CamionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import ar.edu.tpi.logistica.entities.Camion;
-import ar.edu.tpi.logistica.dto.CamionDTO;
-import ar.edu.tpi.logistica.services.CamionService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/camiones")
-
 public class CamionController {
 
     @Autowired
@@ -26,7 +24,7 @@ public class CamionController {
             .toList();
     }
 
-    //obtener por dominio
+    // Obtener por dominio
     @GetMapping("/{dominio}")
     public ResponseEntity<CamionDTO> obtenerPorDominio(@PathVariable String dominio) {
         Camion camion = camionService.obtenerPorDominio(dominio);
@@ -36,17 +34,18 @@ public class CamionController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     // Crear nuevo camión
     @PostMapping
-    public ResponseEntity<CamionDTO> crear(@RequestBody Camion camion) {
-        Camion creado = camionService.guardar(camion);
+    public ResponseEntity<CamionDTO> crear(@RequestBody CamionDTO camionDTO) {
+        Camion creado = camionService.guardar(toEntity(camionDTO));
         return ResponseEntity.ok(toDTO(creado));
     }
 
     // Actualizar camión por dominio
     @PutMapping("/{dominio}")
-    public ResponseEntity<CamionDTO> actualizar(@PathVariable String dominio, @RequestBody Camion camion) {
+    public ResponseEntity<CamionDTO> actualizar(@PathVariable String dominio, @RequestBody CamionDTO camionDTO) {
+        Camion camion = toEntity(camionDTO);
         camion.setDominio(dominio);
         Camion actualizado = camionService.guardar(camion);
         return ResponseEntity.ok(toDTO(actualizado));
@@ -81,6 +80,20 @@ public class CamionController {
         );
     }
 
+    private Camion toEntity(CamionDTO dto) {
+        Camion camion = new Camion();
+        camion.setId(dto.getId());
+        camion.setDominio(dto.getDominio());
+        camion.setCapacidadPesoKg(dto.getCapacidadPesoKg());
+        camion.setCapacidadVolumenM3(dto.getCapacidadVolumenM3());
+        camion.setCostoKmBase(dto.getCostoKmBase());
+        camion.setConsumoPromedioLitrosKm(dto.getConsumoPromedioLitrosKm());
+        camion.setDisponible(dto.getDisponible() != null ? dto.getDisponible() : Boolean.TRUE);
+        camion.setTransportistaId(dto.getTransportistaId());
+        camion.setCreatedAt(dto.getCreatedAt());
+        return camion;
+    }
+
     // Verificar disponibilidad para peso y volumen específicos
     @GetMapping("/verificar-disponibilidad")
     public ResponseEntity<Boolean> verificarDisponibilidad(
@@ -89,6 +102,4 @@ public class CamionController {
         boolean disponible = camionService.verificarDisponibilidad(peso, volumen);
         return ResponseEntity.ok(disponible);
     }
-
-    
 }

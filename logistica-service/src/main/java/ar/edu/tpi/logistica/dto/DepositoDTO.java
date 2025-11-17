@@ -15,4 +15,6 @@ public class DepositoDTO {
     private Double longitud;
     private Double costoEstadiaDiaria;
     private Integer capacidadMaxima;
+    private Boolean activo;
+    private UbicacionDTO ubicacion;
 }
