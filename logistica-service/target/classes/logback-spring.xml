@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    
+    <!-- Patrón de log con Correlation ID -->
+    <property name="LOG_PATTERN" 
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [CID=%X{correlationId}] %logger{36} - %msg%n"/>
+    
+    <!-- Appender para CONSOLA (stdout/stderr para Docker) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- Loggers específicos por paquete -->
+    <logger name="ar.edu.tpi.logistica.controllers" level="INFO"/>
+    <logger name="ar.edu.tpi.logistica.services" level="DEBUG"/>
+    <logger name="ar.edu.tpi.logistica.repositories" level="DEBUG"/>
+    
+    <!-- Logger para SQL (Hibernate) -->
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    
+    <!-- Root logger - solo CONSOLA -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    
+</configuration>

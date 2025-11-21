@@ -6,11 +6,13 @@ import ar.edu.tpi.seguimiento.dto.*;
 import ar.edu.tpi.seguimiento.entities.Cliente;
 import ar.edu.tpi.seguimiento.entities.Contenedor;
 import ar.edu.tpi.seguimiento.entities.Solicitud;
+import ar.edu.tpi.seguimiento.entities.SolicitudCambioEstado;
 import ar.edu.tpi.seguimiento.exceptions.DatosInvalidosException;
 import ar.edu.tpi.seguimiento.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.seguimiento.repositories.ClienteRepository;
 import ar.edu.tpi.seguimiento.repositories.ContenedorRepository;
 import ar.edu.tpi.seguimiento.repositories.SolicitudRepository;
+import ar.edu.tpi.seguimiento.repositories.SolicitudCambioEstadoRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,9 @@ public class SolicitudService {
 
     @Autowired
     private ContenedorRepository contenedorRepository;
+
+    @Autowired
+    private SolicitudCambioEstadoRepository solicitudCambioEstadoRepository;
 
     @Autowired
     private LogisticaServiceClient logisticaClient;
@@ -78,7 +83,7 @@ public class SolicitudService {
 
     /**
      * Crea una nueva solicitud de transporte.
-     * Puede crear cliente y/o contenedor si no existen.
+     * Puede crear cliente, contenedor y ubicaciones si no existen.
      */
     @Transactional
     public SolicitudDTO crearSolicitud(CrearSolicitudRequest request) {
@@ -117,18 +122,49 @@ public class SolicitudService {
             log.info("Nuevo contenedor creado: {}", contenedorId);
         }
 
-        // 3. Obtener ubicaciones de logística (para direcciones y coordenadas)
-        UbicacionDTO ubicacionOrigen = logisticaClient.obtenerUbicacion(request.getOrigenId());
-        if (ubicacionOrigen == null) {
-            throw new IllegalArgumentException("Ubicación de origen no encontrada: " + request.getOrigenId());
+        // 3. Validar que se proporcionaron las coordenadas de origen
+        if (request.getOrigenLatitud() == null || request.getOrigenLongitud() == null) {
+            throw new DatosInvalidosException("Las coordenadas de origen (latitud y longitud) son obligatorias");
         }
         
-        UbicacionDTO ubicacionDestino = logisticaClient.obtenerUbicacion(request.getDestinoId());
-        if (ubicacionDestino == null) {
-            throw new IllegalArgumentException("Ubicación de destino no encontrada: " + request.getDestinoId());
+        // 4. Validar que se proporcionaron las coordenadas de destino
+        if (request.getDestinoLatitud() == null || request.getDestinoLongitud() == null) {
+            throw new DatosInvalidosException("Las coordenadas de destino (latitud y longitud) son obligatorias");
         }
+        
+        // 5. Crear ubicación de origen en logística
+        UbicacionDTO nuevaUbicacionOrigen = new UbicacionDTO();
+        nuevaUbicacionOrigen.setNombre(request.getOrigenNombre() != null ? request.getOrigenNombre() : "Origen");
+        nuevaUbicacionOrigen.setDireccion(request.getOrigenDireccion());
+        nuevaUbicacionOrigen.setLatitud(request.getOrigenLatitud());
+        nuevaUbicacionOrigen.setLongitud(request.getOrigenLongitud());
+        nuevaUbicacionOrigen.setTipo("ORIGEN");
+        
+        UbicacionDTO ubicacionOrigen = logisticaClient.crearUbicacion(nuevaUbicacionOrigen);
+        if (ubicacionOrigen == null) {
+            throw new IllegalArgumentException("No se pudo crear la ubicación de origen en logística");
+        }
+        Long origenId = ubicacionOrigen.getId();
+        log.info("Nueva ubicación de origen creada: {} (lat: {}, lng: {})", 
+                origenId, request.getOrigenLatitud(), request.getOrigenLongitud());
+        
+        // 6. Crear ubicación de destino en logística
+        UbicacionDTO nuevaUbicacionDestino = new UbicacionDTO();
+        nuevaUbicacionDestino.setNombre(request.getDestinoNombre() != null ? request.getDestinoNombre() : "Destino");
+        nuevaUbicacionDestino.setDireccion(request.getDestinoDireccion());
+        nuevaUbicacionDestino.setLatitud(request.getDestinoLatitud());
+        nuevaUbicacionDestino.setLongitud(request.getDestinoLongitud());
+        nuevaUbicacionDestino.setTipo("DESTINO");
+        
+        UbicacionDTO ubicacionDestino = logisticaClient.crearUbicacion(nuevaUbicacionDestino);
+        if (ubicacionDestino == null) {
+            throw new IllegalArgumentException("No se pudo crear la ubicación de destino en logística");
+        }
+        Long destinoId = ubicacionDestino.getId();
+        log.info("Nueva ubicación de destino creada: {} (lat: {}, lng: {})", 
+                destinoId, request.getDestinoLatitud(), request.getDestinoLongitud());
 
-        // 4. Verificar disponibilidad en logística
+        // 7. Verificar disponibilidad en logística
         Contenedor contenedor = contenedorRepository.findById(contenedorId)
                 .orElseThrow(() -> new IllegalArgumentException("Contenedor no encontrado"));
         
@@ -142,20 +178,20 @@ public class SolicitudService {
                     contenedor.getPesoKg(), contenedor.getVolumenM3());
         }
 
-        // 5. Crear solicitud con datos completos
+        // 8. Crear solicitud con datos completos
         Solicitud solicitud = new Solicitud();
         solicitud.setNumero(generarNumeroSolicitud());
         solicitud.setClienteId(clienteId);
         solicitud.setContenedorId(contenedorId);
-        solicitud.setOrigenId(request.getOrigenId());
-        solicitud.setDestinoId(request.getDestinoId());
+        solicitud.setOrigenId(origenId);
+        solicitud.setDestinoId(destinoId);
         
-        // Establecer dirección y coordenadas del origen (desde logística)
+        // Establecer dirección y coordenadas del origen
         solicitud.setOrigenDireccion(ubicacionOrigen.getDireccion());
         solicitud.setOrigenLatitud(BigDecimal.valueOf(ubicacionOrigen.getLatitud()));
         solicitud.setOrigenLongitud(BigDecimal.valueOf(ubicacionOrigen.getLongitud()));
         
-        // Establecer dirección y coordenadas del destino (desde logística)
+        // Establecer dirección y coordenadas del destino
         solicitud.setDestinoDireccion(ubicacionDestino.getDireccion());
         solicitud.setDestinoLatitud(BigDecimal.valueOf(ubicacionDestino.getLatitud()));
         solicitud.setDestinoLongitud(BigDecimal.valueOf(ubicacionDestino.getLongitud()));
@@ -164,6 +200,11 @@ public class SolicitudService {
         solicitud.setFechaSolicitud(LocalDateTime.now());
 
         Solicitud guardada = solicitudRepository.save(solicitud);
+        
+        // 9. Registrar el estado inicial en el historial
+        registrarCambioEstado(guardada.getId(), SolicitudCambioEstado.RequestStatus.BORRADOR, 
+                "SYSTEM", "creacion", "Solicitud creada");
+        
         log.info("Solicitud creada: {} ({}) - Origen: {} -> Destino: {}", 
                 guardada.getId(), guardada.getNumero(), 
                 ubicacionOrigen.getNombre(), ubicacionDestino.getNombre());
@@ -177,6 +218,11 @@ public class SolicitudService {
                 .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
 
         String estadoAnterior = solicitud.getEstado();
+        
+        // Cerrar el estado actual en el historial
+        cerrarEstadoActual(id);
+        
+        // Actualizar el estado de la solicitud
         solicitud.setEstado(nuevoEstado);
         solicitud.setUpdatedAt(LocalDateTime.now());
 
@@ -185,9 +231,46 @@ public class SolicitudService {
         }
 
         Solicitud actualizada = solicitudRepository.save(solicitud);
+        
+        // Registrar el nuevo estado en el historial
+        SolicitudCambioEstado.RequestStatus nuevoEstadoEnum = 
+                SolicitudCambioEstado.RequestStatus.valueOf(nuevoEstado);
+        registrarCambioEstado(id, nuevoEstadoEnum, "SYSTEM", "actualizacion", 
+                "Cambio de estado de " + estadoAnterior + " a " + nuevoEstado);
+        
         log.info("Solicitud {} cambió de estado: {} -> {}", id, estadoAnterior, nuevoEstado);
         
         return convertirADTO(actualizada);
+    }
+    
+    /**
+     * Registra un cambio de estado en el historial
+     */
+    private void registrarCambioEstado(Long solicitudId, SolicitudCambioEstado.RequestStatus estado,
+                                       String actor, String origen, String detalle) {
+        SolicitudCambioEstado cambio = new SolicitudCambioEstado();
+        cambio.setSolicitudId(solicitudId);
+        cambio.setEstado(estado);
+        cambio.setFechaDesde(LocalDateTime.now());
+        cambio.setActor(actor);
+        cambio.setOrigen(origen);
+        cambio.setDetalle(detalle);
+        
+        solicitudCambioEstadoRepository.save(cambio);
+        log.debug("Cambio de estado registrado: Solicitud {} -> {}", solicitudId, estado);
+    }
+    
+    /**
+     * Cierra el estado actual en el historial estableciendo fecha_hasta
+     */
+    private void cerrarEstadoActual(Long solicitudId) {
+        solicitudCambioEstadoRepository.findEstadoActual(solicitudId)
+                .ifPresent(cambioActual -> {
+                    cambioActual.setFechaHasta(LocalDateTime.now());
+                    solicitudCambioEstadoRepository.save(cambioActual);
+                    log.debug("Estado anterior cerrado: Solicitud {} -> {}", 
+                            solicitudId, cambioActual.getEstado());
+                });
     }
 
     /**

@@ -12,7 +12,7 @@ import java.util.List;
 public class CalcularRutaTentativaRequest {
     private Long ubicacionOrigenId;
     private Long ubicacionDestinoId;
-    private List<Long> depositosIntermediosIds; // IDs de depósitos en orden
+    // Ya no se requiere depositosIntermediosIds - se calculan automáticamente
     private Double pesoKg;
     private Double volumenM3;
 }

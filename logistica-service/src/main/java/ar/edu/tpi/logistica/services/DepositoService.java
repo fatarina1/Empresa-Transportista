@@ -98,7 +98,7 @@ public class DepositoService {
                             dto.setContenedorId(contenedor.getId());
                             dto.setIdentificacion(contenedor.getIdentificacion());
                             dto.setSolicitudId(solicitudId);
-                            dto.setSolicitudNumero("SOL-" + solicitudId); // Simplificado
+                            dto.setSolicitudNumero("SOL-" + solicitudId); 
                             dto.setFechaLlegada(fechaLlegada);
                             dto.setDiasEnDeposito(diasEnDeposito);
                             dto.setPesoKg(contenedor.getPesoKg().doubleValue());

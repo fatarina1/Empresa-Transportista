@@ -42,6 +42,30 @@ public class LogisticaServiceClient {
     }
 
     /**
+     * Crea una nueva ubicación en el servicio de logística.
+     * 
+     * @param ubicacionDTO Datos de la ubicación a crear
+     * @return UbicacionDTO con la ubicación creada (incluyendo ID)
+     */
+    public UbicacionDTO crearUbicacion(UbicacionDTO ubicacionDTO) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(logisticaServiceUrl)
+                    .build();
+            
+            return restClient.post()
+                    .uri("/ubicaciones")
+                    .body(ubicacionDTO)
+                    .retrieve()
+                    .body(UbicacionDTO.class);
+                    
+        } catch (Exception e) {
+            log.error("Error al crear ubicación en logistica-service", e);
+            return null;
+        }
+    }
+
+    /**
      * Verifica disponibilidad de camiones para un peso y volumen específico.
      * 
      * @param pesoKg Peso en kilogramos

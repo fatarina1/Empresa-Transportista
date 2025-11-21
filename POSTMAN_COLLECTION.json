@@ -695,7 +695,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"depositosIntermediosIds\": [2, 3],\n  \"pesoKg\": 8500.0,\n  \"volumenM3\": 35.5\n}"
+									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"pesoKg\": 8500.0,\n  \"volumenM3\": 35.5\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/logistica/rutas/calcular-tentativa",
@@ -709,12 +709,12 @@
 										"calcular-tentativa"
 									]
 								},
-								"description": "🆕 **NUEVA FUNCIONALIDAD - RF3**\n\n✅ Calcula una ruta ANTES de crearla oficialmente.\n\n**Proceso:**\n1. Filtra camiones elegibles por peso y volumen del contenedor\n2. Calcula promedios de consumo y costo de camiones elegibles\n3. Obtiene distancias REALES desde GeoAPI (Google Maps)\n4. Calcula costos estimados por tramo\n5. Devuelve ruta completa con:\n   - Costo total estimado\n   - Tiempo total estimado\n   - Detalle por cada tramo\n   - Distancia total"
+								"description": "🆕 **NUEVA FUNCIONALIDAD - RF3 (MEJORADO)**\n\n✅ Calcula MÚLTIPLES rutas alternativas automáticamente (2-4 opciones).\n\n**Proceso:**\n1. Filtra camiones elegibles por peso y volumen del contenedor\n2. Genera automáticamente combinaciones de depósitos:\n   - Ruta directa (sin paradas)\n   - Rutas con 1 depósito intermedio\n   - Ruta con 2 depósitos intermedios\n3. Obtiene distancias REALES desde GeoAPI (Google Maps)\n4. Calcula costos estimados por tramo\n5. Ordena alternativas por costo (menor a mayor)\n6. Retorna objeto con:\n   - alternativas: array de rutas con costos y tiempos\n   - cantidadAlternativas: número de opciones disponibles\n   - observaciones: detalles del cálculo"
 							},
 							"response": []
 						},
 						{
-							"name": "🆕 RF3: Ruta Tentativa SIN depósitos intermedios",
+							"name": "🆕 RF3: Rutas Alternativas - Carga ligera",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -735,7 +735,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"depositosIntermediosIds\": [],\n  \"pesoKg\": 5000.0,\n  \"volumenM3\": 25.0\n}"
+									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"pesoKg\": 5000.0,\n  \"volumenM3\": 25.0\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/logistica/rutas/calcular-tentativa",
@@ -749,7 +749,7 @@
 										"calcular-tentativa"
 									]
 								},
-								"description": "🆕 **RF3 - Ruta directa**\n\nCalcula ruta desde origen a destino SIN depósitos intermedios.\n\n**Casos de uso:**\n- Envíos urgentes\n- Cargas ligeras\n- Comparación de costos (con vs sin depósitos)"
+								"description": "🆕 **RF3 - Rutas alternativas automáticas**\n\nGenera múltiples opciones de rutas con diferentes combinaciones de depósitos.\n\nEl sistema automáticamente calcula y compara:\n- Ruta directa (más rápida)\n- Rutas con 1 depósito (balance costo/tiempo)\n- Ruta con 2 depósitos (posiblemente más económica)\n\nRetorna todas las alternativas ordenadas por costo para que el usuario elija la mejor opción."
 							},
 							"response": []
 						},
@@ -1392,7 +1392,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"clienteId\": 1,\n  \"contenedorId\": 1,\n  \"origenId\": 1,\n  \"destinoId\": 2\n}"
+									"raw": "{\n  \"clienteId\": 1,\n  \"contenedorId\": 1,\n  \"origenNombre\": \"Depósito Córdoba\",\n  \"origenDireccion\": \"Av. Colón 5000, Córdoba\",\n  \"origenLatitud\": -31.4201,\n  \"origenLongitud\": -64.1888,\n  \"destinoNombre\": \"Cliente Buenos Aires\",\n  \"destinoDireccion\": \"Av. Corrientes 1234, CABA\",\n  \"destinoLatitud\": -34.6037,\n  \"destinoLongitud\": -58.3816\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
@@ -1405,7 +1405,7 @@
 										"solicitudes"
 									]
 								},
-								"description": "✅ AUTORIZADO - Cliente puede crear solicitudes\n\nCampos obligatorios (IDs existentes):\n- clienteId (Long, ID del cliente)\n- contenedorId (Long, ID del contenedor)\n- origenId (Long, ID de ubicación origen)\n- destinoId (Long, ID de ubicación destino)\n\nO si el cliente/contenedor no existen, usar:\n- clienteNombre, clienteEmail, clienteTelefono, etc.\n- contenedorIdentificacion, contenedorPesoKg, contenedorVolumenM3, etc."
+								"description": "✅ AUTORIZADO - Cliente puede crear solicitudes\n\nCampos obligatorios:\n- Coordenadas de origen (origenLatitud, origenLongitud) - OBLIGATORIAS\n- Coordenadas de destino (destinoLatitud, destinoLongitud) - OBLIGATORIAS\n- origenNombre, origenDireccion (opcionales pero recomendados)\n- destinoNombre, destinoDireccion (opcionales pero recomendados)\n\nIDs opcionales (si no existen, se crean automáticamente):\n- clienteId (si no se envía, crear con clienteNombre, clienteEmail, etc.)\n- contenedorId (si no se envía, crear con contenedorIdentificacion, contenedorPesoKg, etc.)\n\nLas ubicaciones SIEMPRE se crean nuevas basándose en las coordenadas proporcionadas."
 							},
 							"response": []
 						},
@@ -1431,7 +1431,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"origenId\": 1,\n  \"destinoId\": 2,\n  \"clienteNombre\": \"Juan Pérez\",\n  \"clienteEmail\": \"juan.perez@example.com\",\n  \"clienteTelefono\": \"+54 9 261 5551234\",\n  \"clienteDocumento\": \"20-12345678-9\",\n  \"clienteDireccion\": \"Calle Falsa 123, Mendoza\",\n  \"contenedorIdentificacion\": \"CONT-NEW-001\",\n  \"contenedorPesoKg\": 2500.75,\n  \"contenedorVolumenM3\": 15.5,\n  \"contenedorLargoM\": 3.5,\n  \"contenedorAnchoM\": 2.2,\n  \"contenedorAltoM\": 2.0,\n  \"contenedorDescripcion\": \"Maquinaria industrial\"\n}"
+									"raw": "{\n  \"origenNombre\": \"Fábrica Mendoza\",\n  \"origenDireccion\": \"Parque Industrial Lujan, Mendoza\",\n  \"origenLatitud\": -33.0306,\n  \"origenLongitud\": -68.8478,\n  \"destinoNombre\": \"Centro de Distribución Rosario\",\n  \"destinoDireccion\": \"Av. Circunvalación 2500, Rosario\",\n  \"destinoLatitud\": -32.9587,\n  \"destinoLongitud\": -60.6393,\n  \"clienteNombre\": \"Juan Pérez\",\n  \"clienteEmail\": \"juan.perez@example.com\",\n  \"clienteTelefono\": \"+54 9 261 5551234\",\n  \"clienteDocumento\": \"20-12345678-9\",\n  \"clienteDireccion\": \"Calle Falsa 123, Mendoza\",\n  \"contenedorIdentificacion\": \"CONT-NEW-001\",\n  \"contenedorPesoKg\": 2500.75,\n  \"contenedorVolumenM3\": 15.5,\n  \"contenedorLargoM\": 3.5,\n  \"contenedorAnchoM\": 2.2,\n  \"contenedorAltoM\": 2.0,\n  \"contenedorDescripcion\": \"Maquinaria industrial\"\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
@@ -1444,7 +1444,7 @@
 										"solicitudes"
 									]
 								},
-								"description": "✅ AUTORIZADO - Cliente puede crear solicitud con datos nuevos de cliente y contenedor\n\nEste request crea el cliente y contenedor automáticamente si no existen"
+								"description": "✅ AUTORIZADO - Cliente crea solicitud completa con cliente, contenedor y ubicaciones nuevas\n\n👉 Este request demuestra la creación completa desde cero:\n\n**Ubicaciones (SIEMPRE se crean nuevas):**\n- origenLatitud, origenLongitud (OBLIGATORIOS)\n- destinoLatitud, destinoLongitud (OBLIGATORIOS)\n- origenNombre, origenDireccion (opcionales)\n- destinoNombre, destinoDireccion (opcionales)\n\n**Cliente (se crea si no se pasa clienteId):**\n- clienteNombre, clienteEmail, clienteTelefono, clienteDocumento, clienteDireccion\n\n**Contenedor (se crea si no se pasa contenedorId):**\n- contenedorIdentificacion, contenedorPesoKg, contenedorVolumenM3\n- contenedorLargoM, contenedorAnchoM, contenedorAltoM, contenedorDescripcion\n\nEl sistema crea automáticamente todo lo que no exista."
 							},
 							"response": []
 						},

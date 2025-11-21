@@ -213,14 +213,16 @@ public class CostoService {
     }
 
     /**
-     * Calcula una ruta tentativa con costos estimados
+     * Calcula múltiples rutas tentativas alternativas con costos estimados.
+     * Genera automáticamente combinaciones de depósitos intermedios.
+     * Retorna al menos 2-3 alternativas diferentes.
      */
     @Transactional(readOnly = true)
-    public RutaTentativaDTO calcularRutaTentativa(CalcularRutaTentativaRequest request) {
+    public RutasAlternativasDTO calcularRutaTentativa(CalcularRutaTentativaRequest request) {
         String correlationId = MDC.get("correlationId");
         Timer.Sample sample = metricas.iniciarMedicionRutaTentativa();
         
-        log.debug("[CID={}] Calculando ruta tentativa de ubicación {} a {}", 
+        log.debug("[CID={}] Calculando rutas alternativas de ubicación {} a {}", 
                 correlationId, request.getUbicacionOrigenId(), request.getUbicacionDestinoId());
 
         try {
@@ -230,14 +232,10 @@ public class CostoService {
             Ubicacion destino = ubicacionRepository.findById(request.getUbicacionDestinoId())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Ubicación destino", request.getUbicacionDestinoId()));
 
-            List<Deposito> depositosIntermedios = new ArrayList<>();
-            if (request.getDepositosIntermediosIds() != null) {
-                for (Long depositoId : request.getDepositosIntermediosIds()) {
-                    Deposito deposito = depositoRepository.findById(depositoId)
-                            .orElseThrow(() -> new RecursoNoEncontradoException("Depósito", depositoId));
-                    depositosIntermedios.add(deposito);
-                }
-            }
+            // Obtener todos los depósitos activos
+            List<Deposito> depositosDisponibles = depositoRepository.findAll().stream()
+                    .filter(Deposito::getActivo)
+                    .collect(Collectors.toList());
 
             // Obtener camiones elegibles según capacidad
             List<Camion> camionesElegibles = camionRepository.findAll().stream()
@@ -250,9 +248,69 @@ public class CostoService {
                         correlationId, request.getPesoKg(), request.getVolumenM3());
                 throw new DatosInvalidosException("No hay camiones disponibles con capacidad suficiente");
             }
-            
-            log.debug("[CID={}] Se encontraron {} camiones elegibles", correlationId, camionesElegibles.size());
 
+            // Generar múltiples alternativas de rutas
+            List<RutaTentativaDTO> alternativas = new ArrayList<>();
+            
+            // Alternativa 1: Ruta directa (sin depósitos intermedios)
+            RutaTentativaDTO rutaDirecta = calcularRutaConDepositos(
+                    origen, destino, new ArrayList<>(), camionesElegibles, request, "Ruta directa sin paradas");
+            alternativas.add(rutaDirecta);
+            
+            // Alternativa 2 y 3: Rutas con depósitos intermedios
+            if (!depositosDisponibles.isEmpty()) {
+                // Generar combinaciones de 1 depósito
+                for (Deposito deposito : depositosDisponibles.subList(0, Math.min(2, depositosDisponibles.size()))) {
+                    List<Deposito> depositosIntermedio = new ArrayList<>();
+                    depositosIntermedio.add(deposito);
+                    
+                    RutaTentativaDTO rutaConDeposito = calcularRutaConDepositos(
+                            origen, destino, depositosIntermedio, camionesElegibles, request,
+                            "Ruta con parada en " + deposito.getNombre());
+                    alternativas.add(rutaConDeposito);
+                }
+                
+                // Si hay más de un depósito, generar una ruta con 2 depósitos
+                if (depositosDisponibles.size() >= 2) {
+                    List<Deposito> dosDepositos = depositosDisponibles.subList(0, 2);
+                    RutaTentativaDTO rutaDosDepositos = calcularRutaConDepositos(
+                            origen, destino, dosDepositos, camionesElegibles, request,
+                            "Ruta con paradas en " + dosDepositos.get(0).getNombre() + " y " + dosDepositos.get(1).getNombre());
+                    alternativas.add(rutaDosDepositos);
+                }
+            }
+            
+            // Ordenar por costo (de menor a mayor)
+            alternativas.sort((a, b) -> a.getCostoEstimadoTotal().compareTo(b.getCostoEstimadoTotal()));
+            
+            log.info("[CID={}] Generadas {} rutas alternativas", correlationId, alternativas.size());
+            
+            RutasAlternativasDTO resultado = new RutasAlternativasDTO(
+                    alternativas,
+                    alternativas.size(),
+                    "Se generaron " + alternativas.size() + " rutas alternativas ordenadas por costo"
+            );
+            
+            metricas.finalizarMedicionRutaTentativa(sample);
+            return resultado;
+            
+        } catch (RecursoNoEncontradoException | DatosInvalidosException e) {
+            log.error("[CID={}] Error al calcular rutas alternativas: {}", correlationId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("[CID={}] Error inesperado al calcular rutas alternativas: {}", correlationId, e.getMessage(), e);
+            throw new ServicioExternoException("GeoAPI", "Error al calcular rutas alternativas: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Calcula una ruta específica con los depósitos dados
+     */
+    private RutaTentativaDTO calcularRutaConDepositos(Ubicacion origen, Ubicacion destino,
+                                                      List<Deposito> depositosIntermedios,
+                                                      List<Camion> camionesElegibles,
+                                                      CalcularRutaTentativaRequest request,
+                                                      String descripcion) {
         // Calcular promedios de camiones elegibles
         double costoKmPromedio = camionesElegibles.stream()
                 .mapToDouble(Camion::getCostoKmBase)
@@ -398,28 +456,14 @@ public class CostoService {
             }
         }
 
-            log.info("[CID={}] Ruta tentativa calculada: {} tramos, costo total estimado: {}, distancia total: {} km", 
-                    correlationId, tramos.size(), costoTotalEstimado, distanciaTotal);
-
-            RutaTentativaDTO resultado = new RutaTentativaDTO(
-                    tramos,
-                    costoTotalEstimado,
-                    tiempoTotalEstimado,
-                    tramos.size(),
-                    depositosIntermedios.size(),
-                    distanciaTotal
-            );
-            
-            metricas.finalizarMedicionRutaTentativa(sample);
-            return resultado;
-            
-        } catch (RecursoNoEncontradoException | DatosInvalidosException e) {
-            log.error("[CID={}] Error al calcular ruta tentativa: {}", correlationId, e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("[CID={}] Error inesperado al calcular ruta tentativa: {}", correlationId, e.getMessage(), e);
-            throw new ServicioExternoException("GeoAPI", "Error al calcular ruta tentativa: " + e.getMessage());
-        }
+        return new RutaTentativaDTO(
+                tramos,
+                costoTotalEstimado,
+                tiempoTotalEstimado,
+                tramos.size(),
+                depositosIntermedios.size(),
+                distanciaTotal
+        );
     }
 
     private BigDecimal calcularCostoTramo(double distanciaKm, double costoKmPromedio,

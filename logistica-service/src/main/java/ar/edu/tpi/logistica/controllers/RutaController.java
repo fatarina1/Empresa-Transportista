@@ -3,6 +3,7 @@ package ar.edu.tpi.logistica.controllers;
 import ar.edu.tpi.logistica.dto.CalcularRutaTentativaRequest;
 import ar.edu.tpi.logistica.dto.RutaDTO;
 import ar.edu.tpi.logistica.dto.RutaTentativaDTO;
+import ar.edu.tpi.logistica.dto.RutasAlternativasDTO;
 import ar.edu.tpi.logistica.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.logistica.exceptions.DatosInvalidosException;
 import ar.edu.tpi.logistica.exceptions.ReglaNegocioException;
@@ -71,23 +72,25 @@ public class RutaController {
     }
 
     /**
-     * 🔥 RF3: Calcular ruta tentativa con costos estimados
+     *Calcular ruta tentativa con costos estimados
      * Permite consultar rutas tentativas con tramos, tiempo y costo estimado
      * ANTES de asignar la ruta a una solicitud
+     * Retorna múltiples alternativas de rutas (2-4 opciones)
      */
     @PostMapping("/calcular-tentativa")
-    public ResponseEntity<RutaTentativaDTO> calcularRutaTentativa(
+    public ResponseEntity<RutasAlternativasDTO> calcularRutaTentativa(
             @RequestBody CalcularRutaTentativaRequest request) {
         String correlationId = MDC.get("correlationId");
-        log.info("[CID={}] Calculando ruta tentativa desde {} hasta {}", 
+        log.info("[CID={}] Calculando rutas alternativas desde {} hasta {}", 
             correlationId, request.getUbicacionOrigenId(), request.getUbicacionDestinoId());
         
-        RutaTentativaDTO rutaTentativa = costoService.calcularRutaTentativa(request);
+        RutasAlternativasDTO rutasAlternativas = costoService.calcularRutaTentativa(request);
         
-        log.info("[CID={}] Ruta tentativa calculada - {} tramos, costo estimado: ${}", 
-            correlationId, rutaTentativa.getTramos().size(), rutaTentativa.getCostoEstimadoTotal());
+        log.info("[CID={}] {} rutas alternativas calculadas - {}", 
+            correlationId, rutasAlternativas.getCantidadAlternativas(), 
+            rutasAlternativas.getObservaciones());
         
-        return ResponseEntity.ok(rutaTentativa);
+        return ResponseEntity.ok(rutasAlternativas);
     }
 
     @PostMapping
@@ -132,7 +135,7 @@ public class RutaController {
     }
 
     /**
-     * 🔥 RF8: Obtener costo real de una ruta finalizada
+     * Obtener costo real de una ruta finalizada
      * Retorna el desglose completo del costo real calculado
      */
     @GetMapping("/{id}/costo-real")

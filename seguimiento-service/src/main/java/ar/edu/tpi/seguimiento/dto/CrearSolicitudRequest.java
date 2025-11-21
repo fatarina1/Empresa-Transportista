@@ -13,10 +13,23 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CrearSolicitudRequest {
+    // IDs opcionales - si no se proporcionan, se crean nuevos registros
     private Long clienteId;
     private Long contenedorId;
-    private Long origenId;
-    private Long destinoId;
+    
+    // Datos de la ubicación de origen (OBLIGATORIOS)
+    // El cliente siempre debe proporcionar coordenadas, no IDs
+    private String origenNombre;
+    private String origenDireccion;
+    private Double origenLatitud;
+    private Double origenLongitud;
+    
+    // Datos de la ubicación de destino (OBLIGATORIOS)
+    // El cliente siempre debe proporcionar coordenadas, no IDs
+    private String destinoNombre;
+    private String destinoDireccion;
+    private Double destinoLatitud;
+    private Double destinoLongitud;
     
     // Datos del cliente (si no existe)
     private String clienteNombre;
