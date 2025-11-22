@@ -196,8 +196,6 @@ public class DataSeeder {
             // ESCENARIO 1: Ruta con contenedor EN DEPÓSITO (para probar RF5)
             // Solicitud ID=1, Contenedor ID=1 está esperando en Depósito Rosario
             Ruta ruta1 = new Ruta();
-            ruta1.setSolicitudId(1L);
-            ruta1.setSolicitudExternaId(1L); // ← Cambio de 1001 a 1 para coincidir con seguimiento-service
             ruta1.setEstado(Ruta.EstadoRuta.EN_EJECUCION);
             ruta1.setCantidadTramos(2);
             ruta1.setCantidadDepositos(1);
@@ -245,8 +243,6 @@ public class DataSeeder {
             // ESCENARIO 2: Otra ruta con contenedor EN DEPÓSITO (hace 7 días)
             // Solicitud ID=2, Contenedor ID=2 esperando en Depósito Mendoza
             Ruta ruta2 = new Ruta();
-            ruta2.setSolicitudId(2L);
-            ruta2.setSolicitudExternaId(2L); // ← Cambio de 1002 a 2
             ruta2.setEstado(Ruta.EstadoRuta.EN_EJECUCION);
             ruta2.setCantidadTramos(2);
             ruta2.setCantidadDepositos(1);
@@ -292,8 +288,6 @@ public class DataSeeder {
 
             // ESCENARIO 3: Ruta simple directa (para testing básico)
             Ruta ruta3 = new Ruta();
-            ruta3.setSolicitudId(3L);
-            ruta3.setSolicitudExternaId(1003L);
             ruta3.setEstado(Ruta.EstadoRuta.PROPUESTA);
             ruta3.setCantidadTramos(1);
             ruta3.setCantidadDepositos(0);
@@ -320,8 +314,6 @@ public class DataSeeder {
 
             // RUTA 4: COMPLETADA - Solicitud 4 (entregada hace 2 días, eficiente)
             Ruta ruta4 = new Ruta();
-            ruta4.setSolicitudId(4L);
-            ruta4.setSolicitudExternaId(4L);
             ruta4.setEstado(Ruta.EstadoRuta.FINALIZADA);
             ruta4.setCantidadTramos(1);
             ruta4.setCantidadDepositos(0);
@@ -352,8 +344,6 @@ public class DataSeeder {
 
             // RUTA 5: COMPLETADA - Solicitud 5 (entregada hace 5 días, con demoras)
             Ruta ruta5 = new Ruta();
-            ruta5.setSolicitudId(5L);
-            ruta5.setSolicitudExternaId(5L);
             ruta5.setEstado(Ruta.EstadoRuta.FINALIZADA);
             ruta5.setCantidadTramos(2);
             ruta5.setCantidadDepositos(1);
@@ -406,8 +396,6 @@ public class DataSeeder {
 
             // RUTA 6: COMPLETADA - Solicitud 6 (entregada hace 7 días, perfecta)
             Ruta ruta6 = new Ruta();
-            ruta6.setSolicitudId(6L);
-            ruta6.setSolicitudExternaId(6L);
             ruta6.setEstado(Ruta.EstadoRuta.FINALIZADA);
             ruta6.setCantidadTramos(1);
             ruta6.setCantidadDepositos(0);

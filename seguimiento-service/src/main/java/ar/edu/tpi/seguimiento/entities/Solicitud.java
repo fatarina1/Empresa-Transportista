@@ -26,6 +26,10 @@ public class Solicitud {
     @Column(name = "contenedor_id", nullable = false)
     private Long contenedorId;
 
+    // ID de la ruta asignada en el microservicio de logística
+    @Column(name = "ruta_id")
+    private Long rutaId;
+
     // `Ubicacion` is owned by the logistica microservice. To avoid duplicating
     // entity classes across microservices, we store foreign keys here and
     // resolve the full `Ubicacion` via the logistica service API when needed.

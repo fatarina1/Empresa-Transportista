@@ -754,6 +754,46 @@
 							"response": []
 						},
 						{
+							"name": "🆕 Crear Ruta Completa CON Tramos (RECOMENDADO)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_admin}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"rutaTentativa\": {\n    \"tramos\": [\n      {\n        \"orden\": 1,\n        \"origenNombre\": \"Córdoba\",\n        \"destinoNombre\": \"Rosario\",\n        \"distanciaKm\": 400,\n        \"tiempoEstimadoMinutos\": 300,\n        \"costoEstimado\": 25000,\n        \"tipo\": \"ORIGEN_DEPOSITO\"\n      },\n      {\n        \"orden\": 2,\n        \"origenNombre\": \"Rosario\",\n        \"destinoNombre\": \"Buenos Aires\",\n        \"distanciaKm\": 300,\n        \"tiempoEstimadoMinutos\": 240,\n        \"costoEstimado\": 20000,\n        \"tipo\": \"DEPOSITO_DESTINO\"\n      }\n    ],\n    \"costoEstimadoTotal\": 45000,\n    \"tiempoEstimadoTotalMinutos\": 540,\n    \"cantidadTramos\": 2,\n    \"cantidadDepositos\": 1,\n    \"distanciaTotalKm\": 700\n  },\n  \"observaciones\": \"Ruta seleccionada de las alternativas calculadas\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/logistica/rutas/crear-con-tramos",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"logistica",
+										"rutas",
+										"crear-con-tramos"
+									]
+								},
+								"description": "🆕 **ENDPOINT RECOMENDADO PARA CREAR RUTAS**\n\n✅ Este es el método correcto para crear rutas en el sistema.\n\n**Características:**\n- Crea la ruta Y todos sus tramos en una sola operación transaccional\n- Usa los datos de una ruta tentativa previamente calculada\n- Los tramos se crean automáticamente con toda la información\n- Retorna la ruta completa con sus tramos\n\n**Flujo recomendado:**\n1. Calcular rutas tentativas: POST /rutas/calcular-tentativa\n2. El sistema retorna 2-4 alternativas\n3. Cliente/Admin selecciona la mejor alternativa\n4. Crear ruta con tramos: POST /rutas/crear-con-tramos (este endpoint)\n5. Asignar rutaId a la solicitud en seguimiento-service\n\n**⚠️ IMPORTANTE:**\n- Los tramos se crean automáticamente con estado PENDIENTE\n- La ruta se crea con estado PROPUESTA\n- Después se pueden asignar camiones a cada tramo"
+							},
+							"response": []
+						},
+						{
 							"name": "🆕 RF8: Obtener Costo Real de Ruta (ADMIN)",
 							"request": {
 								"auth": {

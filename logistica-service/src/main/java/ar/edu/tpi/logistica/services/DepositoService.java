@@ -87,18 +87,22 @@ public class DepositoService {
                 }
 
                 // Obtener datos del contenedor desde seguimiento-service
-                Long solicitudId = tramoLlegada.getRuta().getSolicitudExternaId();
-                if (solicitudId != null) {
+                // Buscar solicitud por rutaId (relación invertida)
+                Long rutaId = tramoLlegada.getRuta().getId();
+                SeguimientoServiceClient.SolicitudResponseDTO solicitud = 
+                        seguimientoServiceClient.obtenerSolicitudPorRutaId(rutaId);
+                
+                if (solicitud != null && solicitud.getContenedorId() != null) {
                     try {
                         SeguimientoServiceClient.ContenedorDetalleDTO contenedor = 
-                                seguimientoServiceClient.obtenerContenedorPorSolicitudId(solicitudId);
+                                seguimientoServiceClient.obtenerContenedorPorSolicitudId(solicitud.getId());
 
                         if (contenedor != null) {
                             ContenedorEnDepositoDTO dto = new ContenedorEnDepositoDTO();
                             dto.setContenedorId(contenedor.getId());
                             dto.setIdentificacion(contenedor.getIdentificacion());
-                            dto.setSolicitudId(solicitudId);
-                            dto.setSolicitudNumero("SOL-" + solicitudId); 
+                            dto.setSolicitudId(solicitud.getId());
+                            dto.setSolicitudNumero(solicitud.getNumero()); 
                             dto.setFechaLlegada(fechaLlegada);
                             dto.setDiasEnDeposito(diasEnDeposito);
                             dto.setPesoKg(contenedor.getPesoKg().doubleValue());
@@ -107,8 +111,8 @@ public class DepositoService {
                             contenedores.add(dto);
                         }
                     } catch (Exception e) {
-                        log.warn("No se pudo obtener datos del contenedor para solicitud {}: {}", 
-                                solicitudId, e.getMessage());
+                        log.warn("No se pudo obtener datos del contenedor para ruta {}: {}", 
+                                rutaId, e.getMessage());
                     }
                 }
             }

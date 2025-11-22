@@ -136,6 +136,7 @@ public class DataSeeder {
             solicitud1.setDestinoLongitud(new BigDecimal("-58.373600"));
             // Estado: EN_TRANSITO (primer tramo completado, esperando en Rosario)
             solicitud1.setEstado("EN_TRANSITO");
+            solicitud1.setRutaId(1L); // Apunta a Ruta 1 en logistica-service
             solicitud1.setCostoEstimado(new BigDecimal("45000.00"));
             solicitud1.setTiempoEstimadoMin(720); // 12 horas
             solicitud1.setObservaciones("Ruta con depósito intermedio en Rosario - Contenedor esperando hace 3 días");
@@ -161,6 +162,7 @@ public class DataSeeder {
             solicitud2.setDestinoLongitud(new BigDecimal("-64.183300"));
             // Estado: EN_TRANSITO (primer tramo completado, esperando en Mendoza)
             solicitud2.setEstado("EN_TRANSITO");
+            solicitud2.setRutaId(2L); // Apunta a Ruta 2 en logistica-service
             solicitud2.setCostoEstimado(new BigDecimal("78000.00"));
             solicitud2.setTiempoEstimadoMin(1200); // 20 horas
             solicitud2.setObservaciones("Ruta con depósito intermedio en Mendoza - Contenedor esperando hace 7 días");
@@ -186,6 +188,7 @@ public class DataSeeder {
             solicitud3.setDestinoLongitud(new BigDecimal("-68.827200"));
             // Estado: PROGRAMADA
             solicitud3.setEstado("PROGRAMADA");
+            solicitud3.setRutaId(3L); // Apunta a Ruta 3 en logistica-service
             solicitud3.setCostoEstimado(new BigDecimal("35000.00"));
             solicitud3.setTiempoEstimadoMin(600); // 10 horas
             solicitud3.setObservaciones("Ruta directa sin depósitos intermedios");
@@ -224,6 +227,7 @@ public class DataSeeder {
             solicitud4.setDestinoLatitud(new BigDecimal("-34.587500"));
             solicitud4.setDestinoLongitud(new BigDecimal("-58.373600"));
             solicitud4.setEstado("ENTREGADA");
+            solicitud4.setRutaId(4L); // Apunta a Ruta 4 en logistica-service
             solicitud4.setCostoEstimado(new BigDecimal("52000.00"));
             solicitud4.setCostoFinal(new BigDecimal("48500.00")); // Mejor que estimado
             solicitud4.setTiempoEstimadoMin(720); // 12 horas
@@ -260,6 +264,7 @@ public class DataSeeder {
             solicitud5.setDestinoLatitud(new BigDecimal("-32.890800"));
             solicitud5.setDestinoLongitud(new BigDecimal("-68.827200"));
             solicitud5.setEstado("ENTREGADA");
+            solicitud5.setRutaId(5L); // Apunta a Ruta 5 en logistica-service
             solicitud5.setCostoEstimado(new BigDecimal("95000.00"));
             solicitud5.setCostoFinal(new BigDecimal("108500.00")); // Peor que estimado
             solicitud5.setTiempoEstimadoMin(1200); // 20 horas
@@ -296,6 +301,7 @@ public class DataSeeder {
             solicitud6.setDestinoLatitud(new BigDecimal("-32.890800"));
             solicitud6.setDestinoLongitud(new BigDecimal("-68.827200"));
             solicitud6.setEstado("ENTREGADA");
+            solicitud6.setRutaId(6L); // Apunta a Ruta 6 en logistica-service
             solicitud6.setCostoEstimado(new BigDecimal("42000.00"));
             solicitud6.setCostoFinal(new BigDecimal("42000.00")); // Exacto como estimado
             solicitud6.setTiempoEstimadoMin(600); // 10 horas

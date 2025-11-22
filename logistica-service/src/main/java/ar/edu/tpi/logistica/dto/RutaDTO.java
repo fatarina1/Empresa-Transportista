@@ -12,7 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class RutaDTO {
     private Long id;
-    private Long solicitudExternaId; // ID de la solicitud en seguimiento-service
     private String estado; // PROPUESTA, ASIGNADA, EN_EJECUCION, FINALIZADA, CANCELADA
     private Integer cantidadTramos;
     private Integer cantidadDepositos;

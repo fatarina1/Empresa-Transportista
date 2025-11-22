@@ -106,6 +106,18 @@ public class SolicitudController {
     }
 
     /**
+     * RF: Obtener solicitud por rutaId (para logistica-service)
+     */
+    @GetMapping("/ruta/{rutaId}")
+    public ResponseEntity<SolicitudDTO> obtenerPorRutaId(@PathVariable Long rutaId) {
+        SolicitudDTO solicitud = solicitudService.obtenerPorRutaId(rutaId);
+        if (solicitud == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(solicitud);
+    }
+
+    /**
      * Endpoint principal para crear una nueva solicitud de transporte.
      * Puede crear cliente y/o contenedor si no existen.
      */
@@ -138,6 +150,32 @@ public class SolicitudController {
         } catch (IllegalArgumentException e) {
             log.error("Error al actualizar estado: {}", e.getMessage());
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Asignar ruta a una solicitud
+     * Llamado por logistica-service cuando se crea una ruta
+     */
+    @PatchMapping("/{id}/ruta")
+    public ResponseEntity<SolicitudDTO> asignarRuta(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Number rutaIdNumber = (Number) body.get("rutaId");
+            if (rutaIdNumber == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            Long rutaId = rutaIdNumber.longValue();
+            SolicitudDTO actualizada = solicitudService.asignarRuta(id, rutaId);
+            return ResponseEntity.ok(actualizada);
+        } catch (RecursoNoEncontradoException e) {
+            log.error("Solicitud no encontrada: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error al asignar ruta: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 

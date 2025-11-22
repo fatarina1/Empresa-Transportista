@@ -81,6 +81,51 @@ public class SeguimientoServiceClient {
     }
 
     /**
+     * Obtiene una solicitud por su rutaId
+     */
+    public SolicitudResponseDTO obtenerSolicitudPorRutaId(Long rutaId) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(seguimientoServiceUrl)
+                    .build();
+            
+            return restClient.get()
+                    .uri("/solicitudes/ruta/{rutaId}", rutaId)
+                    .retrieve()
+                    .body(SolicitudResponseDTO.class);
+            
+        } catch (Exception e) {
+            log.error("Error al obtener solicitud por rutaId {}", rutaId, e);
+            return null;
+        }
+    }
+
+    /**
+     * Asigna una ruta a una solicitud (actualiza solicitud.rutaId)
+     */
+    public void asignarRutaASolicitud(Long solicitudId, Long rutaId) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(seguimientoServiceUrl)
+                    .build();
+            
+            Map<String, Object> request = Map.of("rutaId", rutaId);
+            
+            restClient.patch()
+                    .uri("/solicitudes/{id}/ruta", solicitudId)
+                    .body(request)
+                    .retrieve()
+                    .toBodilessEntity();
+            
+            log.info("Solicitud {} vinculada con ruta {}", solicitudId, rutaId);
+            
+        } catch (Exception e) {
+            log.error("Error al asignar ruta {} a solicitud {}", rutaId, solicitudId, e);
+            throw new RuntimeException("Error al vincular ruta con solicitud: " + e.getMessage());
+        }
+    }
+
+    /**
      * Actualiza el estado de una solicitud
      */
     public void actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado) {

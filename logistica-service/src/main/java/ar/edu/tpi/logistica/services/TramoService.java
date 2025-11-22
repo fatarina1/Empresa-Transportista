@@ -189,10 +189,22 @@ public class TramoService {
 
         // 🔥 VALIDACIÓN DE CAPACIDAD: Obtener el contenedor de la solicitud
         Ruta ruta = tramo.getRuta();
-        if (ruta != null && ruta.getSolicitudExternaId() != null) {
+        if (ruta != null) {
             try {
+                // Buscar solicitud por rutaId (relación invertida)
+                SeguimientoServiceClient.SolicitudResponseDTO solicitud = 
+                        seguimientoServiceClient.obtenerSolicitudPorRutaId(ruta.getId());
+                
+                if (solicitud == null || solicitud.getContenedorId() == null) {
+                    log.warn("No se encontró solicitud para ruta {}", ruta.getId());
+                    // Asignar sin validar capacidad si no hay solicitud
+                    tramo.setCamionId(camionId);
+                    tramo.setEstado(Tramo.EstadoTramo.ASIGNADO);
+                    return convertirADTO(tramoRepository.save(tramo));
+                }
+                
                 SeguimientoServiceClient.ContenedorDetalleDTO contenedor = 
-                        seguimientoServiceClient.obtenerContenedorPorSolicitudId(ruta.getSolicitudExternaId());
+                        seguimientoServiceClient.obtenerContenedorPorSolicitudId(solicitud.getId());
                 
                 if (contenedor != null) {
                     // Validar peso
@@ -283,13 +295,23 @@ public class TramoService {
 
         // 🔥 ACTUALIZAR ESTADO DE SOLICITUD: Si es el primer tramo, cambiar a EN_TRANSITO
         Ruta ruta = tramo.getRuta();
-        if (ruta != null && ruta.getSolicitudExternaId() != null) {
-            List<Tramo> todosLosTramos = tramoRepository.findByRutaIdOrderByOrdenAsc(ruta.getId());
-            Tramo primerTramo = todosLosTramos.isEmpty() ? null : todosLosTramos.get(0);
-            
-            if (primerTramo != null && primerTramo.getId().equals(tramoId)) {
-                seguimientoServiceClient.actualizarEstadoSolicitud(ruta.getSolicitudExternaId(), "EN_TRANSITO");
-                log.info("Solicitud {} actualizada a EN_TRANSITO", ruta.getSolicitudExternaId());
+        if (ruta != null) {
+            try {
+                // Buscar solicitud por rutaId
+                SeguimientoServiceClient.SolicitudResponseDTO solicitud = 
+                        seguimientoServiceClient.obtenerSolicitudPorRutaId(ruta.getId());
+                
+                if (solicitud != null) {
+                    List<Tramo> todosLosTramos = tramoRepository.findByRutaIdOrderByOrdenAsc(ruta.getId());
+                    Tramo primerTramo = todosLosTramos.isEmpty() ? null : todosLosTramos.get(0);
+                    
+                    if (primerTramo != null && primerTramo.getId().equals(tramoId)) {
+                        seguimientoServiceClient.actualizarEstadoSolicitud(solicitud.getId(), "EN_TRANSITO");
+                        log.info("Solicitud {} actualizada a EN_TRANSITO", solicitud.getId());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error al actualizar estado de solicitud para ruta {}", ruta.getId(), e);
             }
         }
 
@@ -340,35 +362,41 @@ public class TramoService {
 
         // 🔥 CALCULAR COSTOS REALES: Si es el último tramo de la ruta
         Ruta ruta = tramo.getRuta();
-        if (ruta != null && ruta.getSolicitudExternaId() != null) {
-            List<Tramo> todosLosTramos = tramoRepository.findByRutaIdOrderByOrdenAsc(ruta.getId());
-            Tramo ultimoTramo = todosLosTramos.isEmpty() ? null : todosLosTramos.get(todosLosTramos.size() - 1);
+        if (ruta != null) {
+            // Buscar solicitud por rutaId
+            SeguimientoServiceClient.SolicitudResponseDTO solicitud = 
+                    seguimientoServiceClient.obtenerSolicitudPorRutaId(ruta.getId());
             
-            if (ultimoTramo != null && ultimoTramo.getId().equals(tramoId)) {
-                try {
-                    log.info("Calculando costo real de la ruta {} (último tramo finalizado)", ruta.getId());
-                    CostoRealDTO costoReal = costoService.calcularCostoReal(ruta.getId());
-                    
-                    // Actualizar ruta con costo final
-                    ruta.setCostoFinal(costoReal.getCostoTotal().doubleValue());
-                    rutaRepository.save(ruta);
-                    
-                    // Actualizar solicitud con costo final y tiempo real
-                    seguimientoServiceClient.actualizarCostosYTiempo(
-                            ruta.getSolicitudExternaId(),
-                            costoReal.getCostoTotal(),
-                            costoReal.getTiempoRealMinutos()
-                    );
-                    
-                    // Actualizar estado de solicitud a ENTREGADA
-                    seguimientoServiceClient.actualizarEstadoSolicitud(ruta.getSolicitudExternaId(), "ENTREGADA");
-                    
-                    log.info("✅ Ruta finalizada - Costo real: {} | Tiempo: {} min | Solicitud actualizada a ENTREGADA",
-                            costoReal.getCostoTotal(), costoReal.getTiempoRealMinutos());
-                    
-                } catch (Exception e) {
-                    log.error("Error al calcular costo real de la ruta {}: {}", ruta.getId(), e.getMessage(), e);
-                    // No lanzamos excepción para no bloquear la finalización del tramo
+            if (solicitud != null) {
+                List<Tramo> todosLosTramos = tramoRepository.findByRutaIdOrderByOrdenAsc(ruta.getId());
+                Tramo ultimoTramo = todosLosTramos.isEmpty() ? null : todosLosTramos.get(todosLosTramos.size() - 1);
+                
+                if (ultimoTramo != null && ultimoTramo.getId().equals(tramoId)) {
+                    try {
+                        log.info("Calculando costo real de la ruta {} (último tramo finalizado)", ruta.getId());
+                        CostoRealDTO costoReal = costoService.calcularCostoReal(ruta.getId());
+                        
+                        // Actualizar ruta con costo final
+                        ruta.setCostoFinal(costoReal.getCostoTotal().doubleValue());
+                        rutaRepository.save(ruta);
+                        
+                        // Actualizar solicitud con costo final y tiempo real
+                        seguimientoServiceClient.actualizarCostosYTiempo(
+                                solicitud.getId(),
+                                costoReal.getCostoTotal(),
+                                costoReal.getTiempoRealMinutos()
+                        );
+                        
+                        // Actualizar estado de solicitud a ENTREGADA
+                        seguimientoServiceClient.actualizarEstadoSolicitud(solicitud.getId(), "ENTREGADA");
+                        
+                        log.info("✅ Ruta finalizada - Costo real: {} | Tiempo: {} min | Solicitud actualizada a ENTREGADA",
+                                costoReal.getCostoTotal(), costoReal.getTiempoRealMinutos());
+                        
+                    } catch (Exception e) {
+                        log.error("Error al calcular costo real de la ruta {}: {}", ruta.getId(), e.getMessage(), e);
+                        // No lanzamos excepción para no bloquear la finalización del tramo
+                    }
                 }
             }
         }

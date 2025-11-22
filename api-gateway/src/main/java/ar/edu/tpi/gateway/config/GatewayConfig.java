@@ -59,6 +59,16 @@ public class GatewayConfig {
                         .uri(urlLogistica))
                 
                 // Rutas
+                // Endpoints disponibles:
+                // - GET    /api/logistica/rutas
+                // - GET    /api/logistica/rutas/{id}
+                // - POST   /api/logistica/rutas/calcular-tentativa (Calcula rutas tentativas con múltiples alternativas)
+                // - POST   /api/logistica/rutas/crear-con-tramos (Crea ruta completa con tramos)
+                // - POST   /api/logistica/rutas
+                // - PUT    /api/logistica/rutas/{id}
+                // - PATCH  /api/logistica/rutas/{id}/estado
+                // - DELETE /api/logistica/rutas/{id}
+                // - GET    /api/logistica/rutas/{id}/costo-real
                 .route("logistica-rutas", r -> r
                         .path("/api/logistica/rutas/**")
                         .filters(f -> f

@@ -1,12 +1,11 @@
 package ar.edu.tpi.logistica.controllers;
 
 import ar.edu.tpi.logistica.dto.CalcularRutaTentativaRequest;
+import ar.edu.tpi.logistica.dto.CrearRutaConTramosRequest;
 import ar.edu.tpi.logistica.dto.RutaDTO;
-import ar.edu.tpi.logistica.dto.RutaTentativaDTO;
 import ar.edu.tpi.logistica.dto.RutasAlternativasDTO;
 import ar.edu.tpi.logistica.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.logistica.exceptions.DatosInvalidosException;
-import ar.edu.tpi.logistica.exceptions.ReglaNegocioException;
 import ar.edu.tpi.logistica.services.CostoService;
 import ar.edu.tpi.logistica.services.RutaService;
 import org.slf4j.Logger;
@@ -56,21 +55,6 @@ public class RutaController {
                 });
     }
 
-    @GetMapping("/solicitud/{solicitudId}")
-    public ResponseEntity<RutaDTO> obtenerPorSolicitudId(@PathVariable Long solicitudId) {
-        String correlationId = MDC.get("correlationId");
-        log.info("[CID={}] Obteniendo ruta para solicitud ID: {}", correlationId, solicitudId);
-        return rutaService.obtenerPorSolicitudId(solicitudId)
-                .map(ruta -> {
-                    log.debug("[CID={}] Ruta encontrada para solicitud {}", correlationId, solicitudId);
-                    return ResponseEntity.ok(ruta);
-                })
-                .orElseThrow(() -> {
-                    log.warn("[CID={}] No se encontró ruta para solicitud ID {}", correlationId, solicitudId);
-                    return new RecursoNoEncontradoException("Ruta para solicitud " + solicitudId);
-                });
-    }
-
     /**
      *Calcular ruta tentativa con costos estimados
      * Permite consultar rutas tentativas con tramos, tiempo y costo estimado
@@ -93,10 +77,32 @@ public class RutaController {
         return ResponseEntity.ok(rutasAlternativas);
     }
 
+    /**
+     * Crear ruta completa con tramos a partir de una ruta tentativa seleccionada
+     * Este es el endpoint recomendado para asignar rutas a solicitudes
+     */
+    @PostMapping("/crear-con-tramos")
+    public ResponseEntity<RutaDTO> crearRutaConTramos(@RequestBody CrearRutaConTramosRequest request) {
+        String correlationId = MDC.get("correlationId");
+        log.info("[CID={}] Creando ruta para solicitud {} con {} tramos", 
+                correlationId, request.getSolicitudId(), request.getRutaTentativa().getCantidadTramos());
+        
+        RutaDTO rutaCreada = rutaService.crearRutaConTramos(
+                request.getSolicitudId(),
+                request.getRutaTentativa(), 
+                request.getObservaciones()
+        );
+        
+        log.info("[CID={}] Ruta {} creada y vinculada con solicitud {} - {} tramos", 
+                correlationId, rutaCreada.getId(), request.getSolicitudId(), rutaCreada.getTramos().size());
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(rutaCreada);
+    }
+
     @PostMapping
     public ResponseEntity<RutaDTO> crear(@RequestBody RutaDTO rutaDTO) {
         String correlationId = MDC.get("correlationId");
-        log.info("[CID={}] Creando nueva ruta para solicitud ID: {}", correlationId, rutaDTO.getSolicitudExternaId());
+        log.info("[CID={}] Creando nueva ruta", correlationId);
         
         RutaDTO creada = rutaService.crear(rutaDTO);
         

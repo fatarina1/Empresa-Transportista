@@ -17,6 +17,7 @@ public class SolicitudDTO {
     private Long contenedorId;
     private Long origenId;
     private Long destinoId;
+    private Long rutaId; // ID de la ruta asignada en logística-service
     private String estado; // BORRADOR, PROGRAMADA, EN_TRANSITO, ENTREGADA
     private BigDecimal costoEstimado;
     private Integer tiempoEstimadoMin;

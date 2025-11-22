@@ -15,11 +15,6 @@ public class Ruta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "solicitud_id", nullable = false)
-    private Long solicitudId;
-    @Column(name = "solicitud_externa_id", nullable = false)
-    private Long solicitudExternaId;
-
     @Column(name = "estado", length = 30)
     private EstadoRuta estado;
 

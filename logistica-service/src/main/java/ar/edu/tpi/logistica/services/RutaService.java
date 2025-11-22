@@ -1,18 +1,25 @@
 package ar.edu.tpi.logistica.services;
 
+import ar.edu.tpi.logistica.clients.SeguimientoServiceClient;
 import ar.edu.tpi.logistica.config.MetricasLogistica;
 import ar.edu.tpi.logistica.dto.RutaDTO;
+import ar.edu.tpi.logistica.dto.RutaTentativaDTO;
+import ar.edu.tpi.logistica.dto.TramoDTO;
 import ar.edu.tpi.logistica.entities.Ruta;
+import ar.edu.tpi.logistica.entities.Tramo;
 import ar.edu.tpi.logistica.exceptions.DatosInvalidosException;
 import ar.edu.tpi.logistica.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.logistica.repositories.RutaRepository;
+import ar.edu.tpi.logistica.repositories.TramoRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,7 +32,13 @@ public class RutaService {
     private RutaRepository rutaRepository;
 
     @Autowired
+    private TramoRepository tramoRepository;
+
+    @Autowired
     private MetricasLogistica metricas;
+
+    @Autowired
+    private SeguimientoServiceClient seguimientoServiceClient;
 
     public List<RutaDTO> obtenerTodas() {
         String correlationId = MDC.get("correlationId");
@@ -55,22 +68,10 @@ public class RutaService {
         return resultado;
     }
 
-    public Optional<RutaDTO> obtenerPorSolicitudId(Long solicitudId) {
-        return rutaRepository.findBySolicitudExternaId(solicitudId)
-                .map(this::convertirADTO);
-    }
-
     @Transactional
     public RutaDTO crear(RutaDTO rutaDTO) {
         String correlationId = MDC.get("correlationId");
-        log.debug("[CID={}] Creando nueva ruta para solicitud: {}", correlationId, rutaDTO.getSolicitudExternaId());
-        
-        // Validar que no exista ya una ruta para esta solicitud
-        if (rutaDTO.getSolicitudExternaId() != null && 
-            rutaRepository.findBySolicitudExternaId(rutaDTO.getSolicitudExternaId()).isPresent()) {
-            log.warn("[CID={}] Ya existe una ruta para la solicitud: {}", correlationId, rutaDTO.getSolicitudExternaId());
-            throw new DatosInvalidosException("Ya existe una ruta para esta solicitud");
-        }
+        log.debug("[CID={}] Creando nueva ruta", correlationId);
 
         Ruta ruta = convertirAEntidad(rutaDTO);
         ruta.setCreatedAt(LocalDateTime.now());
@@ -81,6 +82,122 @@ public class RutaService {
         
         log.info("[CID={}] Ruta creada exitosamente con ID: {}", correlationId, guardada.getId());
         return convertirADTO(guardada);
+    }
+
+    /**
+     * Crea una ruta completa con todos sus tramos a partir de una ruta tentativa seleccionada.
+     * También vincula la ruta con la solicitud correspondiente.
+     * 
+     * @param solicitudId ID de la solicitud en seguimiento-service
+     * @param rutaTentativa Ruta tentativa seleccionada (de las alternativas calculadas)
+     * @param observaciones Notas adicionales
+     * @return RutaDTO con los tramos creados
+     */
+    @Transactional
+    public RutaDTO crearRutaConTramos(Long solicitudId, RutaTentativaDTO rutaTentativa, String observaciones) {
+        String correlationId = MDC.get("correlationId");
+        log.info("[CID={}] Creando ruta para solicitud {} con {} tramos", 
+                correlationId, solicitudId, rutaTentativa.getCantidadTramos());
+
+        if (rutaTentativa.getTramos() == null || rutaTentativa.getTramos().isEmpty()) {
+            throw new DatosInvalidosException("La ruta tentativa debe tener al menos un tramo");
+        }
+
+        // 1. Crear la ruta
+        Ruta ruta = new Ruta();
+        ruta.setEstado(Ruta.EstadoRuta.PROPUESTA);
+        ruta.setCantidadTramos(rutaTentativa.getCantidadTramos());
+        ruta.setCantidadDepositos(rutaTentativa.getCantidadDepositos());
+        ruta.setObservaciones(observaciones);
+        ruta.setCreatedAt(LocalDateTime.now());
+        
+        Ruta rutaGuardada = rutaRepository.save(ruta);
+        log.debug("[CID={}] Ruta creada con ID: {}", correlationId, rutaGuardada.getId());
+
+        // 2. Crear los tramos asociados
+        List<Tramo> tramosCreados = new ArrayList<>();
+        for (RutaTentativaDTO.TramoTentativoDTO tramoTentativo : rutaTentativa.getTramos()) {
+            Tramo tramo = new Tramo();
+            tramo.setRuta(rutaGuardada); // Relación ManyToOne
+            tramo.setOrden(tramoTentativo.getOrden());
+            tramo.setDistanciaKm(tramoTentativo.getDistanciaKm().doubleValue());
+            tramo.setCostoAproximado(tramoTentativo.getCostoEstimado().doubleValue());
+            tramo.setEstado(Tramo.EstadoTramo.ESTIMADO);
+            
+            // Mapear tipo de tramo
+            if (tramoTentativo.getTipo() != null) {
+                tramo.setTipo(Tramo.TipoTramo.valueOf(tramoTentativo.getTipo()));
+            }
+            
+            // Coordenadas de origen y destino (vienen de la API de GeoAPI)
+            // Nota: Las coordenadas exactas deberían venir del frontend o calcularse
+            // Por ahora las dejamos null y se asignarán cuando se asigne el camión
+            
+            tramo.setCreatedAt(LocalDateTime.now());
+            
+            Tramo tramoGuardado = tramoRepository.save(tramo);
+            tramosCreados.add(tramoGuardado);
+            
+            log.debug("[CID={}] Tramo {} creado: {} → {} ({} km)", 
+                    correlationId, tramoGuardado.getOrden(), 
+                    tramoTentativo.getOrigenNombre(), tramoTentativo.getDestinoNombre(),
+                    tramoTentativo.getDistanciaKm());
+        }
+
+        metricas.incrementarRutasCreadas();
+        
+        log.info("[CID={}] Ruta {} creada con {} tramos exitosamente", 
+                correlationId, rutaGuardada.getId(), tramosCreados.size());
+
+        // 3. Vincular la ruta con la solicitud en seguimiento-service
+        if (solicitudId != null) {
+            try {
+                seguimientoServiceClient.asignarRutaASolicitud(solicitudId, rutaGuardada.getId());
+                log.info("[CID={}] Solicitud {} vinculada con ruta {}", 
+                        correlationId, solicitudId, rutaGuardada.getId());
+            } catch (Exception e) {
+                log.error("[CID={}] Error al vincular solicitud {} con ruta {}: {}", 
+                        correlationId, solicitudId, rutaGuardada.getId(), e.getMessage());
+                // No lanzamos excepción para no romper la transacción
+                // La ruta se creó correctamente, el vínculo se puede hacer manualmente después
+            }
+        } else {
+            log.warn("[CID={}] Ruta {} creada sin solicitudId - No se pudo vincular con solicitud", 
+                    correlationId, rutaGuardada.getId());
+        }
+
+        // 4. Retornar la ruta con sus tramos
+        RutaDTO rutaDTO = convertirADTO(rutaGuardada);
+        rutaDTO.setTramos(tramosCreados.stream()
+                .map(this::convertirTramoADTO)
+                .collect(Collectors.toList()));
+        
+        return rutaDTO;
+    }
+
+    private TramoDTO convertirTramoADTO(Tramo tramo) {
+        TramoDTO dto = new TramoDTO();
+        dto.setId(tramo.getId());
+        dto.setRutaId(tramo.getRuta() != null ? tramo.getRuta().getId() : null);
+        dto.setOrden(tramo.getOrden());
+        dto.setOrigenDepositoId(tramo.getOrigenDepositoId());
+        dto.setDestinoDepositoId(tramo.getDestinoDepositoId());
+        dto.setOrigenLatitud(tramo.getOrigenLatitud());
+        dto.setOrigenLongitud(tramo.getOrigenLongitud());
+        dto.setDestinoLatitud(tramo.getDestinoLatitud());
+        dto.setDestinoLongitud(tramo.getDestinoLongitud());
+        dto.setCamionId(tramo.getCamionId());
+        dto.setEstado(tramo.getEstado() != null ? tramo.getEstado().name() : null);
+        dto.setTipo(tramo.getTipo() != null ? tramo.getTipo().name() : null);
+        dto.setDistanciaKm(tramo.getDistanciaKm());
+        dto.setCostoAproximado(tramo.getCostoAproximado() != null ? BigDecimal.valueOf(tramo.getCostoAproximado()) : null);
+        dto.setCostoReal(tramo.getCostoReal() != null ? BigDecimal.valueOf(tramo.getCostoReal()) : null);
+        dto.setFechaInicioEstimada(tramo.getFechaInicioEstimada());
+        dto.setFechaFinEstimada(tramo.getFechaFinEstimada());
+        dto.setFechaInicioReal(tramo.getFechaInicioReal());
+        dto.setFechaFinReal(tramo.getFechaFinReal());
+        dto.setCreatedAt(tramo.getCreatedAt());
+        return dto;
     }
 
     @Transactional
@@ -148,7 +265,6 @@ public class RutaService {
     private RutaDTO convertirADTO(Ruta ruta) {
         RutaDTO dto = new RutaDTO();
         dto.setId(ruta.getId());
-        dto.setSolicitudExternaId(ruta.getSolicitudExternaId());
         dto.setEstado(ruta.getEstado() != null ? ruta.getEstado().name() : null);
         dto.setCantidadTramos(ruta.getCantidadTramos());
         dto.setCantidadDepositos(ruta.getCantidadDepositos());
@@ -160,7 +276,6 @@ public class RutaService {
     private Ruta convertirAEntidad(RutaDTO dto) {
         Ruta ruta = new Ruta();
         ruta.setId(dto.getId());
-        ruta.setSolicitudExternaId(dto.getSolicitudExternaId());
         if (dto.getEstado() != null) {
             ruta.setEstado(Ruta.EstadoRuta.valueOf(dto.getEstado()));
         }

@@ -82,6 +82,17 @@ public class SolicitudService {
     }
 
     /**
+     * Obtiene una solicitud por su rutaId
+     */
+    public SolicitudDTO obtenerPorRutaId(Long rutaId) {
+        return solicitudRepository.findAll().stream()
+                .filter(s -> s.getRutaId() != null && s.getRutaId().equals(rutaId))
+                .findFirst()
+                .map(this::convertirADTO)
+                .orElse(null);
+    }
+
+    /**
      * Crea una nueva solicitud de transporte.
      * Puede crear cliente, contenedor y ubicaciones si no existen.
      */
@@ -272,6 +283,24 @@ public class SolicitudService {
     }
 
     /**
+     * Asigna una ruta a una solicitud
+     * Llamado por logistica-service al crear una ruta
+     */
+    @Transactional
+    public SolicitudDTO asignarRuta(Long solicitudId, Long rutaId) {
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Solicitud", solicitudId));
+
+        solicitud.setRutaId(rutaId);
+        solicitud.setUpdatedAt(LocalDateTime.now());
+
+        Solicitud actualizada = solicitudRepository.save(solicitud);
+        log.info("✅ Solicitud {} vinculada con ruta {}", solicitudId, rutaId);
+        
+        return convertirADTO(actualizada);
+    }
+
+    /**
      * Actualiza el costo final y tiempo real de una solicitud
      * Llamado por logistica-service al finalizar todos los tramos
      */
@@ -336,6 +365,7 @@ public class SolicitudService {
         dto.setContenedorId(solicitud.getContenedorId());
         dto.setOrigenId(solicitud.getOrigenId());
         dto.setDestinoId(solicitud.getDestinoId());
+        dto.setRutaId(solicitud.getRutaId());
         dto.setEstado(solicitud.getEstado());
         dto.setCostoEstimado(solicitud.getCostoEstimado());
         dto.setTiempoEstimadoMin(solicitud.getTiempoEstimadoMin());
