@@ -18,9 +18,7 @@ public class LogisticaServiceClient {
     private String logisticaServiceUrl;
 
     /**
-     * Obtiene información de una ubicación desde el servicio de logística.
-     * Utiliza RestClient (Spring 6+) para realizar la petición HTTP.
-     * 
+     * Obtiene información de una ubicación desde el servicio de logística.     * 
      * @param ubicacionId ID de la ubicación a consultar
      * @return UbicacionDTO con los datos de la ubicación
      */

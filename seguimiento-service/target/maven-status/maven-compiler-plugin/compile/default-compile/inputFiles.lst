@@ -9,6 +9,7 @@ C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\Empres
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\controllers\ClienteController.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\controllers\ContenedorController.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\controllers\SolicitudController.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\dto\CambioEstadoDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\dto\ClienteDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\dto\ContenedorDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\seguimiento-service\src\main\java\ar\edu\tpi\seguimiento\dto\CrearSolicitudRequest.java

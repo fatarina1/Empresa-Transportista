@@ -3,9 +3,11 @@ package ar.edu.tpi.seguimiento.config;
 import ar.edu.tpi.seguimiento.entities.Cliente;
 import ar.edu.tpi.seguimiento.entities.Contenedor;
 import ar.edu.tpi.seguimiento.entities.Solicitud;
+import ar.edu.tpi.seguimiento.entities.SolicitudCambioEstado;
 import ar.edu.tpi.seguimiento.repositories.ClienteRepository;
 import ar.edu.tpi.seguimiento.repositories.ContenedorRepository;
 import ar.edu.tpi.seguimiento.repositories.SolicitudRepository;
+import ar.edu.tpi.seguimiento.repositories.SolicitudCambioEstadoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -27,6 +29,7 @@ public class DataSeeder {
     private final ClienteRepository clienteRepository;
     private final ContenedorRepository contenedorRepository;
     private final SolicitudRepository solicitudRepository;
+    private final SolicitudCambioEstadoRepository solicitudCambioEstadoRepository;
 
     @Bean
     CommandLineRunner initDatabase() {
@@ -346,9 +349,143 @@ public class DataSeeder {
             log.info("  - Solicitud 6 (ID=6): ENTREGADA ✅ - Completada hace 7 días (perfecta, costo $42,000)");
             log.info("  - Solicitud 7 (ID=7): BORRADOR - Recién creada hace 4 horas");
 
+            // ============================================
+            // HISTORIAL DE ESTADOS
+            // ============================================
+            log.info("Creando historial de estados...");
+            
+            // SOLICITUD 1: BORRADOR -> PROGRAMADA -> EN_TRANSITO (actualmente en Rosario)
+            crearCambioEstado(1L, SolicitudCambioEstado.RequestStatus.BORRADOR, 
+                    solicitud1.getFechaSolicitud(), 
+                    solicitud1.getFechaSolicitud().plusHours(2),
+                    "Solicitud creada por el cliente");
+            
+            crearCambioEstado(1L, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                    solicitud1.getFechaSolicitud().plusHours(2),
+                    solicitud1.getFechaSolicitud().plusDays(1),
+                    "Ruta planificada: Córdoba -> Rosario -> Buenos Aires");
+            
+            crearCambioEstado(1L, SolicitudCambioEstado.RequestStatus.EN_TRANSITO,
+                    solicitud1.getFechaSolicitud().plusDays(1),
+                    null, // Sigue en este estado
+                    "Contenedor llegó a Rosario - Esperando próximo tramo");
+            
+            // SOLICITUD 2: BORRADOR -> PROGRAMADA -> EN_TRANSITO (actualmente en Mendoza)
+            crearCambioEstado(2L, SolicitudCambioEstado.RequestStatus.BORRADOR,
+                    solicitud2.getFechaSolicitud(),
+                    solicitud2.getFechaSolicitud().plusHours(3),
+                    "Solicitud creada por el cliente");
+            
+            crearCambioEstado(2L, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                    solicitud2.getFechaSolicitud().plusHours(3),
+                    solicitud2.getFechaSolicitud().plusDays(2),
+                    "Ruta planificada: Buenos Aires -> Mendoza -> Córdoba");
+            
+            crearCambioEstado(2L, SolicitudCambioEstado.RequestStatus.EN_TRANSITO,
+                    solicitud2.getFechaSolicitud().plusDays(2),
+                    null, // Sigue en este estado
+                    "Contenedor llegó a Mendoza - Esperando próximo tramo hace 7 días");
+            
+            // SOLICITUD 3: BORRADOR -> PROGRAMADA
+            crearCambioEstado(3L, SolicitudCambioEstado.RequestStatus.BORRADOR,
+                    solicitud3.getFechaSolicitud(),
+                    solicitud3.getFechaSolicitud().plusHours(1),
+                    "Solicitud creada desde app móvil");
+            
+            crearCambioEstado(3L, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                    solicitud3.getFechaSolicitud().plusHours(1),
+                    null, // Estado actual
+                    "Ruta directa confirmada: Córdoba -> Mendoza - Salida programada para mañana");
+            
+            // SOLICITUD 4: ENTREGADA (ciclo completo exitoso)
+            crearCambioEstado(4L, SolicitudCambioEstado.RequestStatus.BORRADOR,
+                    solicitud4.getFechaSolicitud(),
+                    solicitud4.getFechaSolicitud().plusHours(1),
+                    "Nueva solicitud de transporte urgente");
+            
+            crearCambioEstado(4L, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                    solicitud4.getFechaSolicitud().plusHours(1),
+                    solicitud4.getFechaSolicitud().plusDays(2),
+                    "Ruta aprobada - Camión asignado");
+            
+            crearCambioEstado(4L, SolicitudCambioEstado.RequestStatus.EN_TRANSITO,
+                    solicitud4.getFechaSolicitud().plusDays(2),
+                    solicitud4.getFechaSolicitud().plusDays(2).plusHours(11).plusMinutes(20),
+                    "En camino - Ruta directa sin paradas intermedias");
+            
+            crearCambioEstado(4L, SolicitudCambioEstado.RequestStatus.ENTREGADA,
+                    solicitud4.getFechaSolicitud().plusDays(2).plusHours(11).plusMinutes(20),
+                    null, // Estado final
+                    "✅ Entrega completada - Llegó 40min antes de lo estimado");
+            
+            // SOLICITUD 5: ENTREGADA (con demoras)
+            crearCambioEstado(5L, SolicitudCambioEstado.RequestStatus.BORRADOR,
+                    solicitud5.getFechaSolicitud(),
+                    solicitud5.getFechaSolicitud().plusHours(2),
+                    "Solicitud creada vía API");
+            
+            crearCambioEstado(5L, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                    solicitud5.getFechaSolicitud().plusHours(2),
+                    solicitud5.getFechaSolicitud().plusDays(1),
+                    "Planificación completada - Requiere vehículo especial");
+            
+            crearCambioEstado(5L, SolicitudCambioEstado.RequestStatus.EN_TRANSITO,
+                    solicitud5.getFechaSolicitud().plusDays(1),
+                    solicitud5.getFechaSolicitud().plusDays(1).plusHours(23),
+                    "En ruta - Tráfico pesado reportado en ruta 7");
+            
+            crearCambioEstado(5L, SolicitudCambioEstado.RequestStatus.ENTREGADA,
+                    solicitud5.getFechaSolicitud().plusDays(1).plusHours(23),
+                    null, // Estado final
+                    "⚠️ Entrega completada con 3h de retraso - Penalización aplicada");
+            
+            // SOLICITUD 6: ENTREGADA (perfecta - sin cambios de costo/tiempo)
+            crearCambioEstado(6L, SolicitudCambioEstado.RequestStatus.BORRADOR,
+                    solicitud6.getFechaSolicitud(),
+                    solicitud6.getFechaSolicitud().plusMinutes(30),
+                    "Solicitud express");
+            
+            crearCambioEstado(6L, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                    solicitud6.getFechaSolicitud().plusMinutes(30),
+                    solicitud6.getFechaSolicitud().plusHours(4),
+                    "Aprobación inmediata - Cliente premium");
+            
+            crearCambioEstado(6L, SolicitudCambioEstado.RequestStatus.EN_TRANSITO,
+                    solicitud6.getFechaSolicitud().plusHours(4),
+                    solicitud6.getFechaSolicitud().plusHours(14),
+                    "Transporte en curso - Sin incidencias");
+            
+            crearCambioEstado(6L, SolicitudCambioEstado.RequestStatus.ENTREGADA,
+                    solicitud6.getFechaSolicitud().plusHours(14),
+                    null, // Estado final
+                    "✅ Entrega perfecta - Tiempo y costo exactos según estimación");
+            
+            // SOLICITUD 7: BORRADOR (recién creada)
+            crearCambioEstado(7L, SolicitudCambioEstado.RequestStatus.BORRADOR,
+                    solicitud7.getFechaSolicitud(),
+                    null, // Estado actual
+                    "Solicitud creada desde app - Pendiente de validación");
+            
+            log.info("✓ Creados {} registros de historial de estados", solicitudCambioEstadoRepository.count());
+
             log.info("========================================");
             log.info("✅ Datos de prueba cargados exitosamente");
             log.info("========================================");
         };
+    }
+
+    /**
+     * Método auxiliar para crear un registro de cambio de estado
+     */
+    private void crearCambioEstado(Long solicitudId, SolicitudCambioEstado.RequestStatus estado,
+                                   LocalDateTime fechaDesde, LocalDateTime fechaHasta,
+                                   String detalle) {
+        SolicitudCambioEstado cambio = new SolicitudCambioEstado();
+        cambio.setSolicitudId(solicitudId);
+        cambio.setEstado(estado);
+        cambio.setFechaDesde(fechaDesde);
+        cambio.setFechaHasta(fechaHasta);
+        cambio.setDetalle(detalle);
+        solicitudCambioEstadoRepository.save(cambio);
     }
 }

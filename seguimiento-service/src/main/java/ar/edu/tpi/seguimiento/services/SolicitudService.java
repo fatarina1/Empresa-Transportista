@@ -203,7 +203,7 @@ public class SolicitudService {
         
         // 9. Registrar el estado inicial en el historial
         registrarCambioEstado(guardada.getId(), SolicitudCambioEstado.RequestStatus.BORRADOR, 
-                "SYSTEM", "creacion", "Solicitud creada");
+                "Solicitud creada");
         
         log.info("Solicitud creada: {} ({}) - Origen: {} -> Destino: {}", 
                 guardada.getId(), guardada.getNumero(), 
@@ -235,7 +235,7 @@ public class SolicitudService {
         // Registrar el nuevo estado en el historial
         SolicitudCambioEstado.RequestStatus nuevoEstadoEnum = 
                 SolicitudCambioEstado.RequestStatus.valueOf(nuevoEstado);
-        registrarCambioEstado(id, nuevoEstadoEnum, "SYSTEM", "actualizacion", 
+        registrarCambioEstado(id, nuevoEstadoEnum, 
                 "Cambio de estado de " + estadoAnterior + " a " + nuevoEstado);
         
         log.info("Solicitud {} cambió de estado: {} -> {}", id, estadoAnterior, nuevoEstado);
@@ -247,13 +247,11 @@ public class SolicitudService {
      * Registra un cambio de estado en el historial
      */
     private void registrarCambioEstado(Long solicitudId, SolicitudCambioEstado.RequestStatus estado,
-                                       String actor, String origen, String detalle) {
+                                       String detalle) {
         SolicitudCambioEstado cambio = new SolicitudCambioEstado();
         cambio.setSolicitudId(solicitudId);
         cambio.setEstado(estado);
         cambio.setFechaDesde(LocalDateTime.now());
-        cambio.setActor(actor);
-        cambio.setOrigen(origen);
         cambio.setDetalle(detalle);
         
         solicitudCambioEstadoRepository.save(cambio);
@@ -297,6 +295,29 @@ public class SolicitudService {
     public void eliminar(Long id) {
         solicitudRepository.deleteById(id);
         log.info("Solicitud eliminada: {}", id);
+    }
+
+    /**
+     * Obtiene el historial completo de cambios de estado de una solicitud
+     * Ordenado por fecha (más reciente primero)
+     */
+    public List<CambioEstadoDTO> obtenerHistorialEstados(Long solicitudId) {
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Obteniendo historial de estados para solicitud {}", correlationId, solicitudId);
+        
+        // Verificar que la solicitud existe
+        solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Solicitud", solicitudId));
+        
+        List<SolicitudCambioEstado> cambios = solicitudCambioEstadoRepository
+                .findBySolicitudIdOrderByFechaDesdeDesc(solicitudId);
+        
+        log.info("[CID={}] Se encontraron {} cambios de estado para solicitud {}", 
+                correlationId, cambios.size(), solicitudId);
+        
+        return cambios.stream()
+                .map(this::convertirCambioEstadoADTO)
+                .collect(Collectors.toList());
     }
 
     private String generarNumeroSolicitud() {
@@ -361,6 +382,17 @@ public class SolicitudService {
         dto.setOrigen(origen);
         dto.setDestino(destino);
 
+        return dto;
+    }
+
+    private CambioEstadoDTO convertirCambioEstadoADTO(SolicitudCambioEstado cambio) {
+        CambioEstadoDTO dto = new CambioEstadoDTO();
+        dto.setId(cambio.getId());
+        dto.setSolicitudId(cambio.getSolicitudId());
+        dto.setEstado(cambio.getEstado().name());
+        dto.setFechaDesde(cambio.getFechaDesde());
+        dto.setFechaHasta(cambio.getFechaHasta());
+        dto.setDetalle(cambio.getDetalle());
         return dto;
     }
 }

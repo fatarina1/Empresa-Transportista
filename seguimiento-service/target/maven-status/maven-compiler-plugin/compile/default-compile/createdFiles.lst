@@ -17,6 +17,7 @@ ar\edu\tpi\seguimiento\entities\SolicitudCambioEstado$RequestStatus.class
 ar\edu\tpi\seguimiento\repositories\SolicitudRepository.class
 ar\edu\tpi\seguimiento\dto\ErrorResponse.class
 ar\edu\tpi\seguimiento\config\CorrelationIdFilter.class
+ar\edu\tpi\seguimiento\dto\CambioEstadoDTO.class
 ar\edu\tpi\seguimiento\Application.class
 ar\edu\tpi\seguimiento\dto\SolicitudDTO.class
 ar\edu\tpi\seguimiento\dto\SolicitudDetalleDTO.class

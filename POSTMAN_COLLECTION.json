@@ -125,7 +125,7 @@
 								},
 								{
 									"key": "password",
-									"value": "Hola123",
+									"value": "cliente123",
 									"type": "text"
 								}
 							]
@@ -199,7 +199,7 @@
 								},
 								{
 									"key": "password",
-									"value": "Clave123",
+									"value": "admin123",
 									"type": "text"
 								}
 							]
@@ -268,12 +268,12 @@
 								},
 								{
 									"key": "username",
-									"value": "transportista01",
+									"value": "transp01",
 									"type": "text"
 								},
 								{
 									"key": "password",
-									"value": "Clave123",
+									"value": "transp123",
 									"type": "text"
 								}
 							]
@@ -695,7 +695,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"pesoKg\": 8500.0,\n  \"volumenM3\": 35.5\n}"
+									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"depositosIntermediosIds\": [2, 3],\n  \"pesoKg\": 8500.0,\n  \"volumenM3\": 35.5\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/logistica/rutas/calcular-tentativa",
@@ -709,12 +709,12 @@
 										"calcular-tentativa"
 									]
 								},
-								"description": "🆕 **NUEVA FUNCIONALIDAD - RF3 (MEJORADO)**\n\n✅ Calcula MÚLTIPLES rutas alternativas automáticamente (2-4 opciones).\n\n**Proceso:**\n1. Filtra camiones elegibles por peso y volumen del contenedor\n2. Genera automáticamente combinaciones de depósitos:\n   - Ruta directa (sin paradas)\n   - Rutas con 1 depósito intermedio\n   - Ruta con 2 depósitos intermedios\n3. Obtiene distancias REALES desde GeoAPI (Google Maps)\n4. Calcula costos estimados por tramo\n5. Ordena alternativas por costo (menor a mayor)\n6. Retorna objeto con:\n   - alternativas: array de rutas con costos y tiempos\n   - cantidadAlternativas: número de opciones disponibles\n   - observaciones: detalles del cálculo"
+								"description": "🆕 **NUEVA FUNCIONALIDAD - RF3**\n\n✅ Calcula una ruta ANTES de crearla oficialmente.\n\n**Proceso:**\n1. Filtra camiones elegibles por peso y volumen del contenedor\n2. Calcula promedios de consumo y costo de camiones elegibles\n3. Obtiene distancias REALES desde GeoAPI (Google Maps)\n4. Calcula costos estimados por tramo\n5. Devuelve ruta completa con:\n   - Costo total estimado\n   - Tiempo total estimado\n   - Detalle por cada tramo\n   - Distancia total"
 							},
 							"response": []
 						},
 						{
-							"name": "🆕 RF3: Rutas Alternativas - Carga ligera",
+							"name": "🆕 RF3: Ruta Tentativa SIN depósitos intermedios",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -735,7 +735,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"pesoKg\": 5000.0,\n  \"volumenM3\": 25.0\n}"
+									"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"depositosIntermediosIds\": [],\n  \"pesoKg\": 5000.0,\n  \"volumenM3\": 25.0\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/logistica/rutas/calcular-tentativa",
@@ -749,7 +749,7 @@
 										"calcular-tentativa"
 									]
 								},
-								"description": "🆕 **RF3 - Rutas alternativas automáticas**\n\nGenera múltiples opciones de rutas con diferentes combinaciones de depósitos.\n\nEl sistema automáticamente calcula y compara:\n- Ruta directa (más rápida)\n- Rutas con 1 depósito (balance costo/tiempo)\n- Ruta con 2 depósitos (posiblemente más económica)\n\nRetorna todas las alternativas ordenadas por costo para que el usuario elija la mejor opción."
+								"description": "🆕 **RF3 - Ruta directa**\n\nCalcula ruta desde origen a destino SIN depósitos intermedios.\n\n**Casos de uso:**\n- Envíos urgentes\n- Cargas ligeras\n- Comparación de costos (con vs sin depósitos)"
 							},
 							"response": []
 						},
@@ -1018,70 +1018,6 @@
 									]
 								},
 								"description": "✅ **TRANSPORTISTA - Listar tramos asignados a un camión**\n\n**Casos de uso:**\n- Ver qué tramos tiene asignados mi camión\n- Verificar si un camión está ocupado\n- Ver historial de tramos de un camión\n\n**Ejemplo:**\n```\nGET /tramos/camion/1  → Ver todos los tramos del camión 1\n```\n\nSi el camión tiene un tramo en estado INICIADO, no se le puede asignar otro tramo (validación RN1)."
-							},
-							"response": []
-						},
-						{
-							"name": "🔄 Iniciar Tramo (TRANSPORTISTA)",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{access_token_transportista}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PATCH",
-								"header": [],
-								"url": {
-									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/iniciar",
-									"host": [
-										"{{gateway_url}}"
-									],
-									"path": [
-										"api",
-										"logistica",
-										"tramos",
-										"{{tramo_id}}",
-										"iniciar"
-									]
-								},
-								"description": "🔄 **TRANSPORTISTA - Iniciar un tramo (RF7)**\n\n**Transición de estado:** PROGRAMADO → INICIADO\n\n**Prerrequisitos:**\n- Tramo debe estar en estado PROGRAMADO\n- Camión debe estar asignado\n\n**Qué hace automáticamente:**\n- Cambia estado a INICIADO\n- Registra fecha_inicio_real con timestamp actual\n- Si es el PRIMER tramo de la ruta, actualiza la solicitud a estado EN_TRANSITO\n\n**Ejemplo:**\n```\nPATCH /tramos/1/iniciar\n(sin body)\n```"
-							},
-							"response": []
-						},
-						{
-							"name": "✅ Finalizar Tramo (TRANSPORTISTA)",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{access_token_transportista}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PATCH",
-								"header": [],
-								"url": {
-									"raw": "{{gateway_url}}/api/logistica/tramos/{{tramo_id}}/finalizar",
-									"host": [
-										"{{gateway_url}}"
-									],
-									"path": [
-										"api",
-										"logistica",
-										"tramos",
-										"{{tramo_id}}",
-										"finalizar"
-									]
-								},
-								"description": "✅ **TRANSPORTISTA - Finalizar un tramo (RF7 + RF8)**\n\n**Transición de estado:** INICIADO → FINALIZADO\n\n**Prerrequisitos:**\n- Tramo debe estar en estado INICIADO\n- Debe tener fecha_inicio_real registrada\n\n**Qué hace automáticamente:**\n- Cambia estado a FINALIZADO\n- Registra fecha_fin_real con timestamp actual\n- Libera el camión (disponible = true)\n- Calcula duración real en minutos\n\n**Si es el ÚLTIMO tramo de la ruta:**\n- Calcula el costo real total de la ruta (RF8)\n- Actualiza ruta.costoFinal\n- Actualiza la solicitud con costoFinal y tiempoReal\n- Cambia la solicitud a estado ENTREGADA\n\n**Importante:**\n- El costo real se calcula automáticamente basado en:\n  - Distancia total recorrida\n  - Consumo de combustible estimado\n  - Cargo por gestión por tramo\n  - Tiempo real vs estimado (penalizaciones/bonificaciones)\n- Para consultar el costo real completo: GET /rutas/{id}/costo-real (requiere todos los tramos FINALIZADOS)\n\n**Ejemplo:**\n```\nPATCH /tramos/3/finalizar\n(sin body - todo es automático)\n```"
 							},
 							"response": []
 						}
@@ -1392,7 +1328,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"clienteId\": 1,\n  \"contenedorId\": 1,\n  \"origenNombre\": \"Depósito Córdoba\",\n  \"origenDireccion\": \"Av. Colón 5000, Córdoba\",\n  \"origenLatitud\": -31.4201,\n  \"origenLongitud\": -64.1888,\n  \"destinoNombre\": \"Cliente Buenos Aires\",\n  \"destinoDireccion\": \"Av. Corrientes 1234, CABA\",\n  \"destinoLatitud\": -34.6037,\n  \"destinoLongitud\": -58.3816\n}"
+									"raw": "{\n  \"clienteId\": 1,\n  \"contenedorId\": 1,\n  \"origenId\": 1,\n  \"destinoId\": 2\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
@@ -1405,7 +1341,7 @@
 										"solicitudes"
 									]
 								},
-								"description": "✅ AUTORIZADO - Cliente puede crear solicitudes\n\nCampos obligatorios:\n- Coordenadas de origen (origenLatitud, origenLongitud) - OBLIGATORIAS\n- Coordenadas de destino (destinoLatitud, destinoLongitud) - OBLIGATORIAS\n- origenNombre, origenDireccion (opcionales pero recomendados)\n- destinoNombre, destinoDireccion (opcionales pero recomendados)\n\nIDs opcionales (si no existen, se crean automáticamente):\n- clienteId (si no se envía, crear con clienteNombre, clienteEmail, etc.)\n- contenedorId (si no se envía, crear con contenedorIdentificacion, contenedorPesoKg, etc.)\n\nLas ubicaciones SIEMPRE se crean nuevas basándose en las coordenadas proporcionadas."
+								"description": "✅ AUTORIZADO - Cliente puede crear solicitudes\n\nCampos obligatorios (IDs existentes):\n- clienteId (Long, ID del cliente)\n- contenedorId (Long, ID del contenedor)\n- origenId (Long, ID de ubicación origen)\n- destinoId (Long, ID de ubicación destino)\n\nO si el cliente/contenedor no existen, usar:\n- clienteNombre, clienteEmail, clienteTelefono, etc.\n- contenedorIdentificacion, contenedorPesoKg, contenedorVolumenM3, etc."
 							},
 							"response": []
 						},
@@ -1431,7 +1367,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"origenNombre\": \"Fábrica Mendoza\",\n  \"origenDireccion\": \"Parque Industrial Lujan, Mendoza\",\n  \"origenLatitud\": -33.0306,\n  \"origenLongitud\": -68.8478,\n  \"destinoNombre\": \"Centro de Distribución Rosario\",\n  \"destinoDireccion\": \"Av. Circunvalación 2500, Rosario\",\n  \"destinoLatitud\": -32.9587,\n  \"destinoLongitud\": -60.6393,\n  \"clienteNombre\": \"Juan Pérez\",\n  \"clienteEmail\": \"juan.perez@example.com\",\n  \"clienteTelefono\": \"+54 9 261 5551234\",\n  \"clienteDocumento\": \"20-12345678-9\",\n  \"clienteDireccion\": \"Calle Falsa 123, Mendoza\",\n  \"contenedorIdentificacion\": \"CONT-NEW-001\",\n  \"contenedorPesoKg\": 2500.75,\n  \"contenedorVolumenM3\": 15.5,\n  \"contenedorLargoM\": 3.5,\n  \"contenedorAnchoM\": 2.2,\n  \"contenedorAltoM\": 2.0,\n  \"contenedorDescripcion\": \"Maquinaria industrial\"\n}"
+									"raw": "{\n  \"origenId\": 1,\n  \"destinoId\": 2,\n  \"clienteNombre\": \"Juan Pérez\",\n  \"clienteEmail\": \"juan.perez@example.com\",\n  \"clienteTelefono\": \"+54 9 261 5551234\",\n  \"clienteDocumento\": \"20-12345678-9\",\n  \"clienteDireccion\": \"Calle Falsa 123, Mendoza\",\n  \"contenedorIdentificacion\": \"CONT-NEW-001\",\n  \"contenedorPesoKg\": 2500.75,\n  \"contenedorVolumenM3\": 15.5,\n  \"contenedorLargoM\": 3.5,\n  \"contenedorAnchoM\": 2.2,\n  \"contenedorAltoM\": 2.0,\n  \"contenedorDescripcion\": \"Maquinaria industrial\"\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/seguimiento/solicitudes",
@@ -1444,7 +1380,7 @@
 										"solicitudes"
 									]
 								},
-								"description": "✅ AUTORIZADO - Cliente crea solicitud completa con cliente, contenedor y ubicaciones nuevas\n\n👉 Este request demuestra la creación completa desde cero:\n\n**Ubicaciones (SIEMPRE se crean nuevas):**\n- origenLatitud, origenLongitud (OBLIGATORIOS)\n- destinoLatitud, destinoLongitud (OBLIGATORIOS)\n- origenNombre, origenDireccion (opcionales)\n- destinoNombre, destinoDireccion (opcionales)\n\n**Cliente (se crea si no se pasa clienteId):**\n- clienteNombre, clienteEmail, clienteTelefono, clienteDocumento, clienteDireccion\n\n**Contenedor (se crea si no se pasa contenedorId):**\n- contenedorIdentificacion, contenedorPesoKg, contenedorVolumenM3\n- contenedorLargoM, contenedorAnchoM, contenedorAltoM, contenedorDescripcion\n\nEl sistema crea automáticamente todo lo que no exista."
+								"description": "✅ AUTORIZADO - Cliente puede crear solicitud con datos nuevos de cliente y contenedor\n\nEste request crea el cliente y contenedor automáticamente si no existen"
 							},
 							"response": []
 						},
@@ -1484,6 +1420,70 @@
 									]
 								},
 								"description": "❌ NO AUTORIZADO - Transportista no puede crear solicitudes (403 Forbidden)"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Obtener Historial de Estados (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes/{{solicitud_id}}/historial-estados",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes",
+										"{{solicitud_id}}",
+										"historial-estados"
+									]
+								},
+								"description": "✅ AUTORIZADO - Cliente puede ver el historial completo de cambios de estado de sus solicitudes\n\n��� **Retorna:**\n- Lista de todos los cambios de estado ordenados por fecha (más reciente primero)\n- Cada cambio incluye:\n  - estado: nombre del estado (BORRADOR, PROGRAMADA, EN_TRANSITO, ENTREGADA, CANCELADA)\n  - fechaDesde: cuando comenzó este estado\n  - fechaHasta: cuando finalizó (null si es el estado actual)\n  - actor: quién realizó el cambio (SYSTEM, usuario, etc.)\n  - origen: desde dónde se hizo el cambio (creacion, actualizacion, etc.)\n  - detalle: descripción del cambio\n\n��� **Casos de uso:**\n- Auditoría completa de la solicitud\n- Ver cuánto tiempo estuvo en cada estado\n- Identificar quién y cuándo cambió cada estado\n- Tracking detallado del ciclo de vida de la solicitud"
+							},
+							"response": []
+						},
+						{
+							"name": "✅ Obtener Historial de Estados (CLIENTE)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token_cliente}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/seguimiento/solicitudes/{{solicitud_id}}/historial-estados",
+									"host": [
+										"{{gateway_url}}"
+									],
+									"path": [
+										"api",
+										"seguimiento",
+										"solicitudes",
+										"{{solicitud_id}}",
+										"historial-estados"
+									]
+								},
+								"description": "✅ AUTORIZADO - Cliente puede ver el historial completo de cambios de estado de sus solicitudes\n\n📋 **Retorna:**\n- Lista de todos los cambios de estado ordenados por fecha (más reciente primero)\n- Cada cambio incluye:\n  - estado: nombre del estado (BORRADOR, PROGRAMADA, EN_TRANSITO, ENTREGADA, CANCELADA)\n  - fechaDesde: cuando comenzó este estado\n  - fechaHasta: cuando finalizó (null si es el estado actual)\n  - actor: quién realizó el cambio (SYSTEM, usuario, etc.)\n  - origen: desde dónde se hizo el cambio (creacion, actualizacion, etc.)\n  - detalle: descripción del cambio\n\n💡 **Casos de uso:**\n- Auditoría completa de la solicitud\n- Ver cuánto tiempo estuvo en cada estado\n- Identificar quién y cuándo cambió cada estado\n- Tracking detallado del ciclo de vida de la solicitud"
 							},
 							"response": []
 						}
@@ -1661,83 +1661,6 @@
 							]
 						},
 						"description": "Endpoint público - no requiere autenticación"
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Tarifas de Volumen",
-			"item": [
-				{
-					"name": "Listar todas las tarifas",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token_admin}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/logistica/tarifas-volumen",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "logistica", "tarifas-volumen"]
-						},
-						"description": "Devuelve todas las tarifas de volumen registradas."
-					},
-					"response": []
-				},
-				{
-					"name": "Buscar tarifa por ID",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token_admin}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/logistica/tarifas-volumen/{{tarifa_id}}",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "logistica", "tarifas-volumen", "{{tarifa_id}}"]
-						},
-						"description": "Devuelve la tarifa de volumen correspondiente al ID especificado."
-					},
-					"response": []
-				},
-				{
-					"name": "Buscar tarifa por volumen",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token_admin}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/logistica/tarifas-volumen/por-volumen/{{volumen}}",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "logistica", "tarifas-volumen", "por-volumen", "{{volumen}}"]
-						},
-						"description": "Devuelve la tarifa de volumen cuyo rango incluye el volumen especificado."
 					},
 					"response": []
 				}

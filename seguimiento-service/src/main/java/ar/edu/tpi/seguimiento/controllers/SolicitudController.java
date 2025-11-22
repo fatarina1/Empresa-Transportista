@@ -1,8 +1,10 @@
 package ar.edu.tpi.seguimiento.controllers;
 
+import ar.edu.tpi.seguimiento.dto.CambioEstadoDTO;
 import ar.edu.tpi.seguimiento.dto.CrearSolicitudRequest;
 import ar.edu.tpi.seguimiento.dto.SolicitudDTO;
 import ar.edu.tpi.seguimiento.dto.SolicitudDetalleDTO;
+import ar.edu.tpi.seguimiento.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.seguimiento.services.SolicitudService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,5 +173,20 @@ public class SolicitudController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         solicitudService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Obtener el historial completo de cambios de estado de una solicitud
+     * Retorna todos los estados por los que pasó la solicitud, ordenados por fecha (más reciente primero)
+     */
+    @GetMapping("/{id}/historial-estados")
+    public ResponseEntity<List<CambioEstadoDTO>> obtenerHistorialEstados(@PathVariable Long id) {
+        try {
+            List<CambioEstadoDTO> historial = solicitudService.obtenerHistorialEstados(id);
+            return ResponseEntity.ok(historial);
+        } catch (RecursoNoEncontradoException e) {
+            log.error("Solicitud no encontrada: {}", id);
+            return ResponseEntity.notFound().build();
+        }
     }
 }

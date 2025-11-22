@@ -28,12 +28,6 @@ public class SolicitudCambioEstado {
     @Column(name = "fecha_hasta")
     private LocalDateTime fechaHasta;
 
-    @Column(length = 120)
-    private String actor;
-
-    @Column(length = 40)
-    private String origen;
-
     @Column(length = 240)
     private String detalle;
 
