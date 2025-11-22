@@ -5,7 +5,10 @@ ar\edu\tpi\logistica\dto\RutaDTO.class
 ar\edu\tpi\logistica\dto\RutaTentativaDTO.class
 ar\edu\tpi\logistica\dto\RutasAlternativasDTO.class
 ar\edu\tpi\logistica\repositories\TarifaVolumenRepository.class
+ar\edu\tpi\logistica\dto\TramoTrackingDTO.class
+ar\edu\tpi\logistica\dto\TrackingInfoDTO.class
 ar\edu\tpi\logistica\exceptions\ReglaNegocioException.class
+ar\edu\tpi\logistica\dto\CamionSimpleDTO.class
 ar\edu\tpi\logistica\dto\RutaTentativaDTO$TramoTentativoDTO.class
 ar\edu\tpi\logistica\entities\Ruta.class
 ar\edu\tpi\logistica\dto\CalcularRutaTentativaRequest.class
@@ -40,6 +43,7 @@ ar\edu\tpi\logistica\controllers\CamionController.class
 ar\edu\tpi\logistica\config\CorrelationIdFilter.class
 ar\edu\tpi\logistica\repositories\TramoRepository.class
 ar\edu\tpi\logistica\exceptions\RecursoNoEncontradoException.class
+ar\edu\tpi\logistica\dto\CrearRutaConTramosRequest.class
 ar\edu\tpi\logistica\dto\DistanciaDTO.class
 ar\edu\tpi\logistica\controllers\DepositoController.class
 ar\edu\tpi\logistica\entities\Camion.class

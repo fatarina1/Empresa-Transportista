@@ -1,0 +1,60 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    api-gateway:
+      # Las rutas ahora se configuran programáticamente en GatewayConfig.java
+      # Esto permite mayor flexibilidad y control sobre filtros y predicados
+      
+      # Configuración CORS global
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:4200"
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # JWT validation usando JWK Set URI de Keycloak
+          # Configurado para Docker (host.docker.internal) y local (localhost)
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/tpi-backend/protocol/openid-connect/certs}
+
+# Configuración de URLs de microservicios (externalizadas)
+api-gateway:
+  url-logistica-service: http://logistica-service:8082
+  url-seguimiento-service: http://seguimiento-service:8081
+  url-geoapi-service: http://geoapi:8083
+
+# Configuración de actuator para monitoreo
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    reactor.netty: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

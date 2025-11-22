@@ -177,6 +177,18 @@ public class TramoService {
         Tramo tramo = tramoRepository.findById(tramoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Tramo", tramoId));
 
+        // 🔥 VALIDACIÓN: No se puede reasignar camión si el tramo ya fue iniciado o finalizado
+        if (tramo.getEstado() == Tramo.EstadoTramo.INICIADO || 
+            tramo.getEstado() == Tramo.EstadoTramo.FINALIZADO) {
+            String mensaje = String.format(
+                    "No se puede asignar camión al tramo %d porque ya fue %s (fecha inicio real: %s)",
+                    tramoId, 
+                    tramo.getEstado() == Tramo.EstadoTramo.INICIADO ? "iniciado" : "finalizado",
+                    tramo.getFechaInicioReal());
+            log.warn("[CID={}] {}", correlationId, mensaje);
+            throw new ReglaNegocioException(mensaje);
+        }
+
         // Verificar que el camión existe
         Camion camion = camionRepository.findById(camionId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Camión", camionId));

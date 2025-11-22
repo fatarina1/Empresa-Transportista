@@ -32,4 +32,7 @@ public class SolicitudDetalleDTO {
     private Integer tiempoEstimadoMin;
     private BigDecimal costoFinal;
     private Integer tiempoRealMin;
+    
+    // Tracking en tiempo real (si tiene ruta asignada)
+    private TrackingInfoDTO tracking;
 }

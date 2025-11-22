@@ -2,15 +2,16 @@ package ar.edu.tpi.logistica.services;
 
 import ar.edu.tpi.logistica.clients.SeguimientoServiceClient;
 import ar.edu.tpi.logistica.config.MetricasLogistica;
-import ar.edu.tpi.logistica.dto.RutaDTO;
-import ar.edu.tpi.logistica.dto.RutaTentativaDTO;
-import ar.edu.tpi.logistica.dto.TramoDTO;
+import ar.edu.tpi.logistica.dto.*;
+import ar.edu.tpi.logistica.entities.Camion;
 import ar.edu.tpi.logistica.entities.Ruta;
 import ar.edu.tpi.logistica.entities.Tramo;
+import ar.edu.tpi.logistica.entities.Ubicacion;
 import ar.edu.tpi.logistica.exceptions.DatosInvalidosException;
 import ar.edu.tpi.logistica.exceptions.RecursoNoEncontradoException;
 import ar.edu.tpi.logistica.repositories.RutaRepository;
 import ar.edu.tpi.logistica.repositories.TramoRepository;
+import ar.edu.tpi.logistica.repositories.UbicacionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class RutaService {
 
     @Autowired
     private TramoRepository tramoRepository;
+
+    @Autowired
+    private UbicacionRepository ubicacionRepository;
 
     @Autowired
     private MetricasLogistica metricas;
@@ -260,6 +264,125 @@ public class RutaService {
         
         rutaRepository.deleteById(id);
         log.info("[CID={}] Ruta eliminada exitosamente: {}", correlationId, id);
+    }
+
+    /**
+     * Obtiene información de tracking en tiempo real para una ruta.
+     * Calcula progreso, ubicación actual, ETA y estado de cada tramo.
+     */
+    public TrackingInfoDTO obtenerTrackingInfo(Long rutaId) {
+        String correlationId = MDC.get("correlationId");
+        log.debug("[CID={}] Obteniendo tracking info para ruta: {}", correlationId, rutaId);
+
+        // Buscar la ruta
+        Ruta ruta = rutaRepository.findById(rutaId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", rutaId));
+
+        // Buscar todos los tramos de la ruta ordenados por orden
+        List<Tramo> tramos = tramoRepository.findAll().stream()
+                .filter(t -> t.getRuta() != null && t.getRuta().getId().equals(rutaId))
+                .sorted((t1, t2) -> Integer.compare(t1.getOrden(), t2.getOrden()))
+                .collect(Collectors.toList());
+
+        if (tramos.isEmpty()) {
+            log.warn("[CID={}] Ruta {} no tiene tramos asignados", correlationId, rutaId);
+        }
+
+        TrackingInfoDTO trackingInfo = new TrackingInfoDTO();
+        trackingInfo.setRutaId(rutaId);
+        trackingInfo.setEstadoRuta(ruta.getEstado() != null ? ruta.getEstado().name() : "PROPUESTA");
+
+        // Determinar ubicación actual (última ubicación de destino de tramos finalizados)
+        UbicacionDTO ubicacionActual = null;
+        Tramo tramoActual = tramos.stream()
+                .filter(t -> t.getEstado() == Tramo.EstadoTramo.INICIADO)
+                .findFirst()
+                .orElse(null);
+
+        if (tramoActual != null) {
+            // Si hay un tramo en curso, la ubicación actual es su origen
+            ubicacionActual = crearUbicacionDesdeTramo(tramoActual, true);
+        } else {
+            // Si no hay tramo en curso, buscar el último tramo finalizado
+            Optional<Tramo> ultimoFinalizado = tramos.stream()
+                    .filter(t -> t.getEstado() == Tramo.EstadoTramo.FINALIZADO)
+                    .max((t1, t2) -> t1.getOrden().compareTo(t2.getOrden()));
+            
+            if (ultimoFinalizado.isPresent()) {
+                ubicacionActual = crearUbicacionDesdeTramo(ultimoFinalizado.get(), false);
+            } else if (!tramos.isEmpty()) {
+                // Si ningún tramo ha iniciado, ubicación es el origen del primer tramo
+                ubicacionActual = crearUbicacionDesdeTramo(tramos.get(0), true);
+            }
+        }
+        trackingInfo.setUbicacionActual(ubicacionActual);
+
+        // Convertir tramos a DTO de tracking
+        List<TramoDTO> tramosTracking = tramos.stream()
+                .map(this::convertirTramoADTO)
+                .collect(Collectors.toList());
+        trackingInfo.setTramos(tramosTracking);
+
+        log.info("[CID={}] Tracking info obtenido: ruta={}, tramos={}, ubicacionActual={}", 
+                correlationId, rutaId, tramos.size(), 
+                ubicacionActual != null ? ubicacionActual.getDireccion() : "N/A");
+
+        return trackingInfo;
+    }
+
+    /**
+     * Crea un DTO de ubicación desde las coordenadas del tramo.
+     * Si el tramo tiene un depósito, intenta obtener la ubicación real de la BD.
+     * @param tramo Tramo del cual extraer las coordenadas
+     * @param esOrigen true para usar origen, false para usar destino
+     */
+    private UbicacionDTO crearUbicacionDesdeTramo(Tramo tramo, boolean esOrigen) {
+        if (tramo == null) return null;
+        
+        UbicacionDTO dto = new UbicacionDTO();
+        Long depositoId = esOrigen ? tramo.getOrigenDepositoId() : tramo.getDestinoDepositoId();
+        
+        // Si hay depositoId, intentar obtener la ubicación real de la BD
+        if (depositoId != null) {
+            Optional<Ubicacion> ubicacionOpt = ubicacionRepository.findById(depositoId);
+            if (ubicacionOpt.isPresent()) {
+                Ubicacion u = ubicacionOpt.get();
+                dto.setId(u.getId());
+                dto.setNombre(u.getNombre());
+                dto.setDireccion(u.getDireccion());
+                dto.setLatitud(u.getLatitud());
+                dto.setLongitud(u.getLongitud());
+                dto.setTipo(u.getTipo());
+                return dto;
+            }
+        }
+        
+        // Si no hay depósito o no se encontró, usar coordenadas del tramo
+        if (esOrigen) {
+            dto.setLatitud(tramo.getOrigenLatitud());
+            dto.setLongitud(tramo.getOrigenLongitud());
+            if (depositoId != null) {
+                dto.setId(depositoId);
+                dto.setDireccion("Depósito ID: " + depositoId);
+                dto.setTipo("DEPOSITO");
+            } else {
+                dto.setDireccion(String.format("Lat: %.6f, Lon: %.6f", 
+                    tramo.getOrigenLatitud(), tramo.getOrigenLongitud()));
+            }
+        } else {
+            dto.setLatitud(tramo.getDestinoLatitud());
+            dto.setLongitud(tramo.getDestinoLongitud());
+            if (depositoId != null) {
+                dto.setId(depositoId);
+                dto.setDireccion("Depósito ID: " + depositoId);
+                dto.setTipo("DEPOSITO");
+            } else {
+                dto.setDireccion(String.format("Lat: %.6f, Lon: %.6f", 
+                    tramo.getDestinoLatitud(), tramo.getDestinoLongitud()));
+            }
+        }
+        
+        return dto;
     }
 
     private RutaDTO convertirADTO(Ruta ruta) {

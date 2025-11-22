@@ -403,6 +403,12 @@ public class SolicitudService {
             contenedorDTO.setIdentificacion(contenedor.getIdentificacion());
             contenedorDTO.setPesoKg(contenedor.getPesoKg());
             contenedorDTO.setVolumenM3(contenedor.getVolumenM3());
+            contenedorDTO.setLargoM(contenedor.getLargoM());
+            contenedorDTO.setAnchoM(contenedor.getAnchoM());
+            contenedorDTO.setAltoM(contenedor.getAltoM());
+            contenedorDTO.setDescripcion(contenedor.getDescripcion());
+            contenedorDTO.setClienteId(contenedor.getClienteId());
+            contenedorDTO.setCreatedAt(contenedor.getCreatedAt());
             dto.setContenedor(contenedorDTO);
         });
 
@@ -411,6 +417,18 @@ public class SolicitudService {
         UbicacionDTO destino = logisticaClient.obtenerUbicacion(solicitud.getDestinoId());
         dto.setOrigen(origen);
         dto.setDestino(destino);
+
+        // Obtener información de tracking en tiempo real si tiene ruta asignada
+        if (solicitud.getRutaId() != null) {
+            try {
+                TrackingInfoDTO tracking = logisticaClient.obtenerTrackingInfo(solicitud.getRutaId());
+                dto.setTracking(tracking);
+                log.debug("Tracking info agregado para solicitud {} con ruta {}", solicitud.getId(), solicitud.getRutaId());
+            } catch (Exception e) {
+                log.warn("No se pudo obtener tracking info para ruta {}: {}", solicitud.getRutaId(), e.getMessage());
+                dto.setTracking(null);
+            }
+        }
 
         return dto;
     }

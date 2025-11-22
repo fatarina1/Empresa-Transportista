@@ -69,6 +69,7 @@ public class GatewayConfig {
                 // - PATCH  /api/logistica/rutas/{id}/estado
                 // - DELETE /api/logistica/rutas/{id}
                 // - GET    /api/logistica/rutas/{id}/costo-real
+                // - GET    /api/logistica/rutas/{id}/tracking (Tracking en tiempo real)
                 .route("logistica-rutas", r -> r
                         .path("/api/logistica/rutas/**")
                         .filters(f -> f

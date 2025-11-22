@@ -1,5 +1,6 @@
 package ar.edu.tpi.seguimiento.clients;
 
+import ar.edu.tpi.seguimiento.dto.TrackingInfoDTO;
 import ar.edu.tpi.seguimiento.dto.UbicacionDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,4 +89,76 @@ public class LogisticaServiceClient {
             return false;
         }
     }
+
+    /**
+     * Obtiene información de tracking en tiempo real de una ruta.
+     * 
+     * @param rutaId ID de la ruta a consultar
+     * @return TrackingInfoDTO con información completa de tracking
+     */
+    public TrackingInfoDTO obtenerTrackingInfo(Long rutaId) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(logisticaServiceUrl)
+                    .build();
+            
+            return restClient.get()
+                    .uri("/rutas/{id}/tracking", rutaId)
+                    .retrieve()
+                    .body(TrackingInfoDTO.class);
+                    
+        } catch (Exception e) {
+            log.error("Error al obtener tracking info para ruta {} desde logistica-service", rutaId, e);
+            return null;
+        }
+    }
+
+    /**
+     * Asigna una ruta a una solicitud existente
+     */
+    public void asignarRutaASolicitud(Long solicitudId, Long rutaId) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(logisticaServiceUrl)
+                    .build();
+
+            restClient.patch()
+                    .uri("/solicitudes/{id}/ruta", solicitudId)
+                    .body(new RutaIdRequest(rutaId))
+                    .retrieve()
+                    .toBodilessEntity();
+
+            log.info("Ruta {} asignada a solicitud {} correctamente", rutaId, solicitudId);
+
+        } catch (Exception e) {
+            log.error("Error al asignar ruta {} a solicitud {}", rutaId, solicitudId, e);
+            throw new RuntimeException("No se pudo asignar la ruta a la solicitud", e);
+        }
+    }
+
+    /**
+     * Obtiene una solicitud por su rutaId
+     */
+    public SolicitudDTO obtenerSolicitudPorRutaId(Long rutaId) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(logisticaServiceUrl)
+                    .build();
+
+            return restClient.get()
+                    .uri("/solicitudes/ruta/{rutaId}", rutaId)
+                    .retrieve()
+                    .body(SolicitudDTO.class);
+
+        } catch (Exception e) {
+            log.error("Error al obtener solicitud por rutaId {} desde logistica-service", rutaId, e);
+            return null;
+        }
+    }
+
+    // DTO interno para enviar rutaId
+    private record RutaIdRequest(Long rutaId) {}
+
+    // DTO interno para recibir solicitud
+    private record SolicitudDTO(Long id, String numero, Long rutaId) {}
 }

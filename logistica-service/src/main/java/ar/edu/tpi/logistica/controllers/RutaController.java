@@ -158,6 +158,27 @@ public class RutaController {
         }
     }
 
+    /**
+     * Obtener información de tracking en tiempo real de una ruta
+     * Retorna ubicación actual, progreso, tramos y ETA
+     */
+    @GetMapping("/{id}/tracking")
+    public ResponseEntity<?> obtenerTracking(@PathVariable Long id) {
+        String correlationId = MDC.get("correlationId");
+        log.info("[CID={}] Obteniendo información de tracking para ruta {}", correlationId, id);
+        
+        try {
+            var trackingInfo = rutaService.obtenerTrackingInfo(id);
+            return ResponseEntity.ok(trackingInfo);
+        } catch (RecursoNoEncontradoException e) {
+            log.warn("[CID={}] Ruta {} no encontrada para tracking", correlationId, id);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("[CID={}] Error al obtener tracking para ruta {}: {}", correlationId, id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Error al obtener información de tracking"));
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         try {

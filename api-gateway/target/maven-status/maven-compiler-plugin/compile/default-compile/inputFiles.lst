@@ -1,0 +1,7 @@
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\config\CorsConfig.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\config\GatewayConfig.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\config\KeycloakRoleConverter.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\config\SecurityConfig.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\controllers\KeycloakAuthController.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\filter\UserContextFilter.java
+C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\api-gateway\src\main\java\ar\edu\tpi\gateway\GatewayApplication.java

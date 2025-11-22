@@ -1,0 +1,8 @@
+ar\edu\tpi\gateway\config\CorsConfig.class
+ar\edu\tpi\gateway\controllers\KeycloakAuthController.class
+ar\edu\tpi\gateway\GatewayApplication.class
+ar\edu\tpi\gateway\config\KeycloakRoleConverter.class
+ar\edu\tpi\gateway\filter\UserContextFilter$Config.class
+ar\edu\tpi\gateway\config\SecurityConfig.class
+ar\edu\tpi\gateway\filter\UserContextFilter.class
+ar\edu\tpi\gateway\config\GatewayConfig.class
