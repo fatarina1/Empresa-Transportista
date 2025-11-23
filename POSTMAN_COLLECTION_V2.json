@@ -1,0 +1,1160 @@
+{
+	"info": {
+		"name": "🚚 TPI Backend - Sistema Completo",
+		"description": "Colección completa para probar TODOS los flujos del sistema de transporte.\n\n**📋 Flujos implementados:**\n✅ Creación de solicitudes con Cliente y Contenedor\n✅ Asignación de Rutas mediante Rutas Alternativas (con estadía incluida)\n✅ Asignación de camión y operatoria del transportista\n✅ Seguimiento de la solicitud para el cliente\n✅ Cálculos de costos y tiempos (estimados y reales)\n\n**👥 Usuarios de prueba:**\n- `cliente01` / `Hola123` (rol: cliente)\n- `admin01` / `Clave123` (rol: admin)\n- `transportista01` / `Clave123` (rol: transportista)\n\n**🎯 Orden sugerido de pruebas:**\n1. Autenticación\n2. Flujo Completo de Solicitud (Cliente → Admin → Transportista → Cliente)\n3. Consultas de contenedores en depósito\n4. Cálculo de rutas alternativas\n5. Costos reales de rutas finalizadas",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "keycloak_url",
+			"value": "http://localhost:8180",
+			"type": "default"
+		},
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:8080",
+			"type": "default"
+		},
+		{
+			"key": "realm",
+			"value": "tpi-backend",
+			"type": "default"
+		},
+		{
+			"key": "client_id",
+			"value": "tpi-backend-client",
+			"type": "default"
+		},
+		{
+			"key": "access_token_cliente",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "access_token_admin",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "access_token_transportista",
+			"value": "",
+			"type": "default"
+		}
+	],
+	"item": [
+		{
+			"name": "🔐 1. Autenticación",
+			"item": [
+				{
+					"name": "Login como CLIENTE",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token_cliente\", jsonData.access_token);",
+									"    console.log(\"✅ Token de CLIENTE guardado\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}"
+								},
+								{
+									"key": "username",
+									"value": "cliente01"
+								},
+								{
+									"key": "password",
+									"value": "Hola123"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login como ADMIN",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token_admin\", jsonData.access_token);",
+									"    console.log(\"✅ Token de ADMIN guardado\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}"
+								},
+								{
+									"key": "username",
+									"value": "admin01"
+								},
+								{
+									"key": "password",
+									"value": "Clave123"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login como TRANSPORTISTA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token_transportista\", jsonData.access_token);",
+									"    console.log(\"✅ Token de TRANSPORTISTA guardado\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}"
+								},
+								{
+									"key": "username",
+									"value": "transportista01"
+								},
+								{
+									"key": "password",
+									"value": "Clave123"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🎯 2. FLUJO COMPLETO - Nueva Solicitud",
+			"description": "Flujo de punta a punta: Cliente crea solicitud → Admin calcula rutas → Admin asigna ruta → Transportista asigna camión → Transportista ejecuta → Cliente consulta",
+			"item": [
+				{
+					"name": "2.1 📦 CLIENTE - Listar mis Contenedores",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_cliente}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/contenedores/cliente/1",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"contenedores",
+								"cliente",
+								"1"
+							]
+						},
+						"description": "Cliente lista sus contenedores disponibles para crear una solicitud"
+					}
+				},
+				{
+					"name": "2.2 📝 CLIENTE - Crear Solicitud (BORRADOR)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"nueva_solicitud_id\", jsonData.id);",
+									"    console.log(\"✅ Solicitud creada con ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_cliente}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clienteId\": 1,\n  \"contenedorId\": 8,\n  \"origenId\": 1,\n  \"destinoId\": 2,\n  \"observaciones\": \"Solicitud de prueba - Material de oficina\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/solicitudes",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"solicitudes"
+							]
+						},
+						"description": "Cliente crea una nueva solicitud en estado BORRADOR con contenedor 8 (Material de oficina: 450kg, 2.8m³)"
+					}
+				},
+				{
+					"name": "2.3 🧮 ADMIN - Calcular Rutas Alternativas",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 2,\n  \"pesoKg\": 450,\n  \"volumenM3\": 2.8\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/costos/rutas-tentativas",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"costos",
+								"rutas-tentativas"
+							]
+						},
+						"description": "Admin calcula 2 rutas alternativas:\n- Ruta directa Córdoba → Mendoza\n- Ruta optimizada con depósitos intermedios automáticos\n\n⏱️ Incluye tiempo de estadía (24h por depósito)\n💰 Incluye costo de estadía"
+					}
+				},
+				{
+					"name": "2.4 ✅ ADMIN - Asignar Ruta a Solicitud",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"nueva_ruta_id\", jsonData.rutaId);",
+									"    console.log(\"✅ Ruta asignada con ID:\", jsonData.rutaId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 2,\n  \"pesoKg\": 450,\n  \"volumenM3\": 2.8\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/solicitudes/{{nueva_solicitud_id}}/ruta",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"solicitudes",
+								"{{nueva_solicitud_id}}",
+								"ruta"
+							]
+						},
+						"description": "Admin genera y asigna la ruta óptima a la solicitud.\nLa solicitud pasa a estado PROGRAMADA."
+					}
+				},
+				{
+					"name": "2.5 🔍 ADMIN - Ver Detalles de la Ruta Creada",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/rutas/{{nueva_ruta_id}}",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"rutas",
+								"{{nueva_ruta_id}}"
+							]
+						},
+						"description": "Ver los tramos generados con fechas estimadas que incluyen estadía de 24h en depósitos"
+					}
+				},
+				{
+					"name": "2.6 🚚 TRANSPORTISTA - Asignar Camión al Primer Tramo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"camionId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tramos/CAMBIAR_POR_ID_TRAMO/camion",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"tramos",
+								"CAMBIAR_POR_ID_TRAMO",
+								"camion"
+							]
+						},
+						"description": "⚠️ IMPORTANTE: Cambiar 'CAMBIAR_POR_ID_TRAMO' por el ID del primer tramo de la ruta creada (ver respuesta anterior)"
+					}
+				},
+				{
+					"name": "2.7 🚀 TRANSPORTISTA - Iniciar Primer Tramo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tramos/CAMBIAR_POR_ID_TRAMO/iniciar",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"tramos",
+								"CAMBIAR_POR_ID_TRAMO",
+								"iniciar"
+							]
+						},
+						"description": "Transportista inicia el viaje del primer tramo.\nLa solicitud pasa a estado EN_TRANSITO."
+					}
+				},
+				{
+					"name": "2.8 ✔️ TRANSPORTISTA - Finalizar Primer Tramo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tramos/CAMBIAR_POR_ID_TRAMO/finalizar",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"tramos",
+								"CAMBIAR_POR_ID_TRAMO",
+								"finalizar"
+							]
+						},
+						"description": "Finaliza el primer tramo.\nSi termina en depósito, el contenedor queda esperando 24h de estadía."
+					}
+				},
+				{
+					"name": "2.9 📱 CLIENTE - Ver Estado de mi Solicitud",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_cliente}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/solicitudes/{{nueva_solicitud_id}}",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"solicitudes",
+								"{{nueva_solicitud_id}}"
+							]
+						},
+						"description": "Cliente consulta el estado actual de su solicitud"
+					}
+				},
+				{
+					"name": "2.10 📊 CLIENTE - Ver Historial de Estados",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_cliente}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/solicitudes/{{nueva_solicitud_id}}/historial-estados",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"solicitudes",
+								"{{nueva_solicitud_id}}",
+								"historial-estados"
+							]
+						},
+						"description": "Ver todos los cambios de estado de la solicitud con fechas y detalles"
+					}
+				}
+			]
+		},
+		{
+			"name": "📦 3. Contenedores en Depósito (RF5)",
+			"description": "Consultar contenedores que están esperando en depósitos con su tiempo de estadía",
+			"item": [
+				{
+					"name": "3.1 Contenedores en Depósito Rosario (3 días)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/depositos/3/contenedores",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"depositos",
+								"3",
+								"contenedores"
+							]
+						},
+						"description": "Contenedor ID=1 esperando hace 3 días"
+					}
+				},
+				{
+					"name": "3.2 Contenedores en Depósito Mendoza (7 días)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/depositos/2/contenedores",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"depositos",
+								"2",
+								"contenedores"
+							]
+						},
+						"description": "Contenedor ID=2 esperando hace 7 días\n⚠️ Estadía prolongada - verificar próximo tramo"
+					}
+				},
+				{
+					"name": "3.3 Listar Todos los Depósitos",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/depositos",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"depositos"
+							]
+						},
+						"description": "Ver todos los depósitos con sus costos de estadía diaria"
+					}
+				}
+			]
+		},
+		{
+			"name": "💰 4. Costos Reales (RF8)",
+			"description": "Calcular costos reales de rutas FINALIZADAS con bonificaciones/penalizaciones",
+			"item": [
+				{
+					"name": "4.1 ⭐ Ruta 4 - Eficiente (Costo Menor)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/rutas/4/costo-real",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"rutas",
+								"4",
+								"costo-real"
+							]
+						},
+						"description": "Ruta completada hace 2 días\n✅ Llegó 40min antes de lo estimado\n✅ Costo $48,500 vs estimado $52,000\n🎁 Bonificación por eficiencia"
+					}
+				},
+				{
+					"name": "4.2 ⚠️ Ruta 5 - Con Demoras (Costo Mayor)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/rutas/5/costo-real",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"rutas",
+								"5",
+								"costo-real"
+							]
+						},
+						"description": "Ruta completada hace 5 días\n⚠️ Llegó 3h más tarde de lo estimado\n⚠️ Costo $108,500 vs estimado $95,000\n⚡ Penalización por demora"
+					}
+				},
+				{
+					"name": "4.3 🎯 Ruta 6 - Perfecta (Costo Exacto)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/rutas/6/costo-real",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"rutas",
+								"6",
+								"costo-real"
+							]
+						},
+						"description": "Ruta completada hace 7 días\n🎯 Tiempo exacto: 10h estimado = 10h real\n🎯 Costo exacto: $42,000\n✅ Sin bonificaciones ni penalizaciones"
+					}
+				}
+			]
+		},
+		{
+			"name": "🧮 5. Rutas Alternativas (RF3)",
+			"description": "Calcular rutas tentativas con depósitos automáticos y estadía incluida",
+			"item": [
+				{
+					"name": "5.1 Córdoba → Buenos Aires (Carga Liviana)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"pesoKg\": 280,\n  \"volumenM3\": 1.5\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/costos/rutas-tentativas",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"costos",
+								"rutas-tentativas"
+							]
+						},
+						"description": "Contenedor 10 (herramientas pequeñas)\n- Ruta 1: Directa (sin depósitos)\n- Ruta 2: Con Depósito Rosario (incluye 24h estadía)\n\n💰 Compare costos\n⏱️ Compare tiempos (incluye estadía)"
+					}
+				},
+				{
+					"name": "5.2 Buenos Aires → Córdoba (Carga Media)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ubicacionOrigenId\": 4,\n  \"ubicacionDestinoId\": 1,\n  \"pesoKg\": 1100,\n  \"volumenM3\": 5.5\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/costos/rutas-tentativas",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"costos",
+								"rutas-tentativas"
+							]
+						},
+						"description": "Contenedor 9 (electrodomésticos)\nRutas con depósitos intermedios automáticos seleccionados por proximidad geográfica"
+					}
+				},
+				{
+					"name": "5.3 Rosario → Mendoza (Ruta Larga)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ubicacionOrigenId\": 3,\n  \"ubicacionDestinoId\": 2,\n  \"pesoKg\": 800,\n  \"volumenM3\": 3.2\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/costos/rutas-tentativas",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"costos",
+								"rutas-tentativas"
+							]
+						},
+						"description": "Ruta larga que puede usar 1-2 depósitos intermedios\nCada depósito suma:\n- 24h de tiempo\n- Costo de estadía diaria del depósito"
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 6. Consultas Generales",
+			"item": [
+				{
+					"name": "6.1 Listar Todas las Solicitudes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/solicitudes",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"solicitudes"
+							]
+						}
+					}
+				},
+				{
+					"name": "6.2 Listar Todas las Rutas",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/rutas",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"rutas"
+							]
+						}
+					}
+				},
+				{
+					"name": "6.3 Listar Camiones Disponibles",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/camiones?disponible=true",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"camiones"
+							],
+							"query": [
+								{
+									"key": "disponible",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "6.4 Listar Ubicaciones",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/ubicaciones",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"ubicaciones"
+							]
+						}
+					}
+				},
+				{
+					"name": "6.5 Ver Mis Clientes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_admin}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/clientes",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"clientes"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔧 7. Operaciones del Transportista",
+			"item": [
+				{
+					"name": "7.1 Ver Tramos Asignados a Mis Camiones",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tramos?estado=ASIGNADO",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"tramos"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "ASIGNADO"
+								}
+							]
+						},
+						"description": "Ver todos los tramos que están asignados y listos para iniciar"
+					}
+				},
+				{
+					"name": "7.2 Ver Tramos en Progreso",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/tramos?estado=EN_PROGRESO",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"tramos"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "EN_PROGRESO"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "7.3 Validar Capacidad de Camión (RN1)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token_transportista}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"camionId\": 3,\n  \"pesoKg\": 8500,\n  \"volumenM3\": 45\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/logistica/camiones/validar-capacidad",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"logistica",
+								"camiones",
+								"validar-capacidad"
+							]
+						},
+						"description": "Validar si un camión puede transportar una carga específica.\nCamión 3: 8000kg / 40m³\nCarga: 8500kg / 45m³\n❌ Debe rechazar por exceso de capacidad"
+					}
+				}
+			]
+		}
+	]
+}

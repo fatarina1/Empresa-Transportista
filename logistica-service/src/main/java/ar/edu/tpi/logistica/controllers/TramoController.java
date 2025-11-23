@@ -5,7 +5,6 @@ import ar.edu.tpi.logistica.entities.Tramo;
 import ar.edu.tpi.logistica.services.TramoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,32 +56,7 @@ public class TramoController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<TramoDTO> crear(@RequestBody TramoDTO tramoDTO) {
-        try {
-            TramoDTO creado = tramoService.crear(tramoDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(creado);
-        } catch (IllegalArgumentException e) {
-            log.error("Error al crear tramo: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<TramoDTO> actualizar(@PathVariable Long id, @RequestBody TramoDTO tramoDTO) {
-        try {
-            TramoDTO actualizado = tramoService.actualizar(id, tramoDTO);
-            return ResponseEntity.ok(actualizado);
-        } catch (IllegalArgumentException e) {
-            log.error("Error al actualizar tramo: {}", e.getMessage());
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    /**
-     * RF6: Asignar camión a un tramo
-     * Body: {"camionId": 1}
-     */
+    //Asignación de camión a un tramo
     @PatchMapping("/{id}/asignar-camion")
     public ResponseEntity<TramoDTO> asignarCamion(
             @PathVariable Long id,
@@ -125,16 +99,6 @@ public class TramoController {
         } catch (IllegalArgumentException e) {
             log.error("Error al finalizar tramo: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        try {
-            tramoService.eliminar(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
         }
     }
 }

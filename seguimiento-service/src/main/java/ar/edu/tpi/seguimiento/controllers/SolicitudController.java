@@ -207,6 +207,34 @@ public class SolicitudController {
         }
     }
 
+    /**
+     * Actualizar costo estimado y tiempo estimado de una solicitud
+     * Llamado por logistica-service cuando se asigna una ruta con tramos
+     */
+    @PatchMapping("/{id}/costos-estimados")
+    public ResponseEntity<SolicitudDTO> actualizarCostosYTiempoEstimados(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Number costoEstimado = (Number) body.get("costoEstimado");
+            Integer tiempoEstimadoMin = (Integer) body.get("tiempoEstimadoMin");
+            
+            if (costoEstimado == null || tiempoEstimadoMin == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            SolicitudDTO actualizada = solicitudService.actualizarCostosYTiempoEstimados(
+                    id, 
+                    java.math.BigDecimal.valueOf(costoEstimado.doubleValue()), 
+                    tiempoEstimadoMin
+            );
+            return ResponseEntity.ok(actualizada);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al actualizar costos estimados: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         solicitudService.eliminar(id);

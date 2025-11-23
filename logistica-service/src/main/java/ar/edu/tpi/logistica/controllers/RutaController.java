@@ -56,10 +56,13 @@ public class RutaController {
     }
 
     /**
-     *Calcular ruta tentativa con costos estimados
-     * Permite consultar rutas tentativas con tramos, tiempo y costo estimado
-     * ANTES de asignar la ruta a una solicitud
-     * Retorna múltiples alternativas de rutas (2-4 opciones)
+     * Calcular rutas alternativas con costos estimados.
+     * Genera 2 alternativas:
+     * 1. Ruta directa (origen → destino)
+     * 2. Ruta con depósitos intermedios (selección automática inteligente)
+     * 
+     * Los depósitos se seleccionan automáticamente según optimización geográfica.
+     * Permite consultar rutas tentativas ANTES de asignar la ruta a una solicitud.
      */
     @PostMapping("/calcular-tentativa")
     public ResponseEntity<RutasAlternativasDTO> calcularRutaTentativa(
@@ -97,28 +100,6 @@ public class RutaController {
                 correlationId, rutaCreada.getId(), request.getSolicitudId(), rutaCreada.getTramos().size());
         
         return ResponseEntity.status(HttpStatus.CREATED).body(rutaCreada);
-    }
-
-    @PostMapping
-    public ResponseEntity<RutaDTO> crear(@RequestBody RutaDTO rutaDTO) {
-        String correlationId = MDC.get("correlationId");
-        log.info("[CID={}] Creando nueva ruta", correlationId);
-        
-        RutaDTO creada = rutaService.crear(rutaDTO);
-        
-        log.info("[CID={}] Ruta creada exitosamente con ID: {}", correlationId, creada.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<RutaDTO> actualizar(@PathVariable Long id, @RequestBody RutaDTO rutaDTO) {
-        String correlationId = MDC.get("correlationId");
-        log.info("[CID={}] Actualizando ruta ID: {}", correlationId, id);
-        
-        RutaDTO actualizada = rutaService.actualizar(id, rutaDTO);
-        
-        log.info("[CID={}] Ruta ID {} actualizada exitosamente", correlationId, id);
-        return ResponseEntity.ok(actualizada);
     }
 
     @PatchMapping("/{id}/estado")
@@ -176,16 +157,6 @@ public class RutaController {
         } catch (Exception e) {
             log.error("[CID={}] Error al obtener tracking para ruta {}: {}", correlationId, id, e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", "Error al obtener información de tracking"));
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        try {
-            rutaService.eliminar(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
         }
     }
 }

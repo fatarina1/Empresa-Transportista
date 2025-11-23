@@ -1,0 +1,278 @@
+{
+	"info": {
+		"_postman_id": "test-flow-complete-v3",
+		"name": "🧪 FLUJO COMPLETO - Test Costos Tramo",
+		"description": "Colección para probar el flujo completo desde solicitud hasta finalización de tramo con cálculo de costos.\n\n**INSTRUCCIONES:**\n1. Ejecutar requests en orden (1→2→3→...→12)\n2. En el paso 3, COPIAR el ID del tramo devuelto\n3. REEMPLAZAR la variable {{tramoId}} con ese ID\n4. Continuar con los siguientes pasos\n\n**SOLICITUD DE PRUEBA:**\n- ID: 11\n- Número: SOL-TEST-2024\n- Origen: Córdoba (ID=1)\n- Destino: Buenos Aires (ID=4)\n- Contenedor: CONT-TEST-2024\n- Ruta: Directa (1 solo tramo sin depósitos intermedios)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1️⃣ Listar Solicitud (BORRADOR)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/solicitudes/11",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8081",
+					"path": ["api", "solicitudes", "11"]
+				},
+				"description": "✅ Obtiene la solicitud SOL-TEST-2024 en estado BORRADOR (sin ruta asignada)\n\n**Verificar:**\n- estado: BORRADOR\n- rutaId: null\n- costoEstimado: 50000.00\n- costoFinal: null"
+			},
+			"response": []
+		},
+		{
+			"name": "2️⃣ Calcular Ruta Directa (Córdoba → Buenos Aires)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"ubicacionOrigenId\": 1,\n  \"ubicacionDestinoId\": 4,\n  \"pesoKg\": 600,\n  \"volumenM3\": 3.0\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/costos/ruta-tentativa",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "costos", "ruta-tentativa"]
+				},
+				"description": "✅ Calcula 2 rutas alternativas:\n- Ruta directa (1 tramo)\n- Ruta con depósitos intermedios (2+ tramos)\n\n**Tomar nota del costo estimado de la ruta directa para comparar después**"
+			},
+			"response": []
+		},
+		{
+			"name": "3️⃣ Crear Ruta Directa y Asignarla a Solicitud",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Guardar el ID del tramo automáticamente",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    if (jsonData.tramos && jsonData.tramos.length > 0) {",
+							"        var tramoId = jsonData.tramos[0].id;",
+							"        pm.environment.set('tramoId', tramoId);",
+							"        console.log('✅ Tramo ID guardado: ' + tramoId);",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"solicitudId\": 11,\n  \"rutaTentativa\": {\n    \"tramos\": [\n      {\n        \"orden\": 1,\n        \"origenNombre\": \"Av. Colón 1234, Córdoba\",\n        \"destinoNombre\": \"Av. Ramos Mejía 1302, CABA\",\n        \"origenLatitud\": -31.4167,\n        \"origenLongitud\": -64.1833,\n        \"destinoLatitud\": -34.5875,\n        \"destinoLongitud\": -58.3736,\n        \"distanciaKm\": 710.0,\n        \"tiempoEstimadoMinutos\": 720,\n        \"costoEstimado\": 45000.00,\n        \"tipo\": \"ORIGEN_DESTINO\"\n      }\n    ],\n    \"costoEstimadoTotal\": 45000.00,\n    \"tiempoEstimadoTotalMinutos\": 720,\n    \"cantidadTramos\": 1,\n    \"cantidadDepositos\": 0,\n    \"distanciaTotalKm\": 710.0\n  },\n  \"observaciones\": \"Ruta directa para solicitud de prueba SOL-TEST-2024\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/rutas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "rutas"]
+				},
+				"description": "✅ Crea una ruta directa de 1 tramo (Córdoba → Buenos Aires) y la asigna a la solicitud 11\n\n**⚠️ IMPORTANTE: COPIAR el ID del tramo de la respuesta**\n\nBuscar en la respuesta:\n```json\n\"tramos\": [\n  {\n    \"id\": 123,  ← COPIAR ESTE NÚMERO\n    ...\n  }\n]\n```\n\nLuego ir a Variables (arriba a la derecha) y reemplazar `tramoId` con ese número."
+			},
+			"response": []
+		},
+		{
+			"name": "4️⃣ Verificar Solicitud (Debe estar EN_PLANIFICACION)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/solicitudes/11",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8081",
+					"path": ["api", "solicitudes", "11"]
+				},
+				"description": "✅ Verifica que la solicitud cambió automáticamente\n\n**Debe mostrar:**\n- estado: EN_PLANIFICACION\n- rutaId: (número asignado)\n- costoEstimado: 50000.00\n- costoFinal: null (todavía no finalizó)"
+			},
+			"response": []
+		},
+		{
+			"name": "5️⃣ Listar Camiones Disponibles",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/camiones?disponible=true",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "camiones"],
+					"query": [
+						{
+							"key": "disponible",
+							"value": "true"
+						}
+					]
+				},
+				"description": "✅ Lista camiones disponibles para asignar al tramo\n\n**Buscar un camión que tenga:**\n- disponible: true\n- capacidadPesoKg >= 600\n- capacidadVolumenM3 >= 3.0\n\n**Recomendado: usar camionId = 1 (Scania R500)**"
+			},
+			"response": []
+		},
+		{
+			"name": "6️⃣ Asignar Camión al Tramo",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"camionId\": 1\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/tramos/{{tramoId}}/asignar-camion",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "tramos", "{{tramoId}}", "asignar-camion"]
+				},
+				"description": "✅ Asigna el camión ID=1 (Scania R500) al tramo\n\n**⚠️ IMPORTANTE:** Asegurarse de haber reemplazado {{tramoId}} con el ID real del paso 3\n\n**Este paso CALCULA costoAproximado del tramo**"
+			},
+			"response": []
+		},
+		{
+			"name": "7️⃣ Ver Tramo (Debe tener costoAproximado)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/tramos/{{tramoId}}",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "tramos", "{{tramoId}}"]
+				},
+				"description": "✅ Verifica que el tramo ahora tiene costoAproximado\n\n**Debe mostrar:**\n- estado: ASIGNADO\n- camionId: 1\n- costoAproximado: ✅ CALCULADO (ej: 45000.00)\n- costoReal: null (aún no finalizado)\n- distanciaKm: 710.0"
+			},
+			"response": []
+		},
+		{
+			"name": "8️⃣ Iniciar Tramo",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/tramos/{{tramoId}}/iniciar",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "tramos", "{{tramoId}}", "iniciar"]
+				},
+				"description": "✅ Inicia el tramo\n\n**Cambia:**\n- estado: INICIADO\n- fechaInicioReal: (timestamp actual)"
+			},
+			"response": []
+		},
+		{
+			"name": "9️⃣ Verificar Solicitud (Debe estar EN_TRANSITO)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/solicitudes/11",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8081",
+					"path": ["api", "solicitudes", "11"]
+				},
+				"description": "✅ Verifica que la solicitud cambió automáticamente\n\n**Debe mostrar:**\n- estado: EN_TRANSITO\n- rutaId: (número asignado)\n- costoEstimado: 50000.00\n- costoFinal: null (todavía no finalizó)"
+			},
+			"response": []
+		},
+		{
+			"name": "🔟 Finalizar Tramo",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/tramos/{{tramoId}}/finalizar",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "tramos", "{{tramoId}}", "finalizar"]
+				},
+				"description": "✅ Finaliza el tramo\n\n**🎯 ESTE ES EL PASO CLAVE - Ahora calcula:**\n1. costoReal del tramo individual ✅ (NUEVO)\n2. Como es el último tramo, también:\n   - Calcula costo total de la ruta\n   - Actualiza solicitud a ENTREGADA\n   - Actualiza costoFinal y tiempoReal en solicitud\n   - Libera el camión\n\n**Cambia:**\n- estado: FINALIZADO\n- fechaFinReal: (timestamp actual)\n- costoReal: ✅ CALCULADO (este era el problema original)"
+			},
+			"response": []
+		},
+		{
+			"name": "1️⃣1️⃣ Ver Tramo FINALIZADO (con costoReal) ⭐",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/tramos/{{tramoId}}",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8082",
+					"path": ["api", "tramos", "{{tramoId}}"]
+				},
+				"description": "🎯 **ESTE ES EL RESULTADO ESPERADO - VERIFICAR:**\n\n```json\n{\n  \"id\": ...,\n  \"orden\": 1,\n  \"estado\": \"FINALIZADO\",\n  \"distanciaKm\": 710.0,\n  \"costoAproximado\": 45000.00,  ✅ DEBE TENER VALOR\n  \"costoReal\": 48500.00,         ✅ DEBE TENER VALOR (era null antes)\n  \"fechaInicioReal\": \"2024-11-23T...\",\n  \"fechaFinReal\": \"2024-11-23T...\",\n  \"camionId\": 1\n}\n```\n\n**✅ PROBLEMA RESUELTO:** Ahora `costoReal` se calcula para cada tramo individual"
+			},
+			"response": []
+		},
+		{
+			"name": "1️⃣2️⃣ Ver Solicitud ENTREGADA (con costoFinal) ⭐",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/solicitudes/11",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8081",
+					"path": ["api", "solicitudes", "11"]
+				},
+				"description": "🎯 **VERIFICAR ESTADO FINAL DE LA SOLICITUD:**\n\n```json\n{\n  \"id\": 11,\n  \"numero\": \"SOL-TEST-2024\",\n  \"estado\": \"ENTREGADA\",       ✅ Cambió automáticamente\n  \"rutaId\": ...,\n  \"costoEstimado\": 50000.00,\n  \"costoFinal\": 48500.00,       ✅ Calculado con suma de tramos\n  \"tiempoEstimadoMin\": 720,\n  \"tiempoRealMin\": 15,           ✅ Calculado desde inicio hasta fin\n  \"fechaSolicitud\": \"...\",\n  \"updatedAt\": \"...\"             ✅ Actualizado al finalizar\n}\n```\n\n**✅ FLUJO COMPLETO EXITOSO**"
+			},
+			"response": []
+		},
+		{
+			"name": "📊 BONUS: Ver Historial de Estados",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/solicitudes/11/historial",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8081",
+					"path": ["api", "solicitudes", "11", "historial"]
+				},
+				"description": "📊 Ver el historial completo de cambios de estado:\n\n1. BORRADOR → (creación inicial)\n2. EN_PLANIFICACION → (al asignar ruta)\n3. EN_TRANSITO → (al iniciar tramo)\n4. ENTREGADA → (al finalizar último tramo)"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "tramoId",
+			"value": "REEMPLAZAR_CON_ID_DEL_PASO_3",
+			"type": "string",
+			"description": "⚠️ Reemplazar con el ID del tramo devuelto en el paso 3"
+		}
+	]
+}

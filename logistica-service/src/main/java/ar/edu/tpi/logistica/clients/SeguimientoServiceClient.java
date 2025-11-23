@@ -81,6 +81,35 @@ public class SeguimientoServiceClient {
     }
 
     /**
+     * Actualiza el costo estimado y tiempo estimado de una solicitud (cuando se asigna una ruta)
+     */
+    public void actualizarCostosYTiempoEstimados(Long solicitudId, BigDecimal costoEstimado, Integer tiempoEstimadoMinutos) {
+        try {
+            RestClient restClient = restClientBuilder
+                    .baseUrl(seguimientoServiceUrl)
+                    .build();
+            
+            Map<String, Object> request = Map.of(
+                "costoEstimado", costoEstimado,
+                "tiempoEstimadoMin", tiempoEstimadoMinutos
+            );
+            
+            restClient.patch()
+                    .uri("/api/solicitudes/{id}/costos-estimados", solicitudId)
+                    .body(request)
+                    .retrieve()
+                    .toBodilessEntity();
+            
+            log.info("Actualizado costo estimado {} y tiempo estimado {} min para solicitud {}", 
+                    costoEstimado, tiempoEstimadoMinutos, solicitudId);
+            
+        } catch (Exception e) {
+            log.error("Error al actualizar costos estimados para solicitud {}", solicitudId, e);
+            // No lanzamos excepción para no romper el flujo
+        }
+    }
+
+    /**
      * Obtiene una solicitud por su rutaId
      */
     public SolicitudResponseDTO obtenerSolicitudPorRutaId(Long rutaId) {

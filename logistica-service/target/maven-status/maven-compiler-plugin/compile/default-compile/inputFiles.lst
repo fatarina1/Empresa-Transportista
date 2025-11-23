@@ -13,10 +13,8 @@ C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\Empres
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\controllers\TarifaVolumenController.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\controllers\TramoController.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\controllers\UbicacionController.java
-C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\CalcularRutaRequest.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\CalcularRutaTentativaRequest.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\CamionDTO.java
-C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\CamionSimpleDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\ContenedorEnDepositoDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\CostoRealDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\CrearRutaConTramosRequest.java
@@ -29,7 +27,6 @@ C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\Empres
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\TarifaVolumenDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\TrackingInfoDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\TramoDTO.java
-C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\TramoTrackingDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\dto\UbicacionDTO.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\entities\Camion.java
 C:\Users\Usuario\Documents\Universidad\Uni - 3er año\Backend\Backend TPI\EmpresaTransportistaTP\logistica-service\src\main\java\ar\edu\tpi\logistica\entities\ConfiguracionGeneral.java

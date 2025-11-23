@@ -1,0 +1,26 @@
+{
+  "solicitudId": 11,
+  "rutaTentativa": {
+    "tramos": [
+      {
+        "orden": 1,
+        "origenNombre": "Av. Colón 1234, Córdoba",
+        "destinoNombre": "Av. Ramos Mejía 1302, CABA",
+        "origenLatitud": -31.4167,
+        "origenLongitud": -64.1833,
+        "destinoLatitud": -34.5875,
+        "destinoLongitud": -58.3736,
+        "distanciaKm": 710.0,
+        "tiempoEstimadoMinutos": 720,
+        "costoEstimado": 45000.00,
+        "tipo": "ORIGEN_DESTINO"
+      }
+    ],
+    "costoEstimadoTotal": 45000.00,
+    "tiempoEstimadoTotalMinutos": 720,
+    "cantidadTramos": 1,
+    "cantidadDepositos": 0,
+    "distanciaTotalKm": 710.0
+  },
+  "observaciones": "Ruta de prueba con coordenadas - Solicitud SOL-TEST-2024"
+}

@@ -113,6 +113,43 @@ public class DataSeeder {
             contenedor3.setCreatedAt(LocalDateTime.now());
             contenedorRepository.save(contenedor3);
 
+            // Contenedores adicionales para pruebas de rutas alternativas
+            Contenedor contenedor8 = new Contenedor();
+            contenedor8.setIdentificacion("CONT-008-2024");
+            contenedor8.setPesoKg(new BigDecimal("450.00"));
+            contenedor8.setVolumenM3(new BigDecimal("2.8"));
+            contenedor8.setLargoM(new BigDecimal("1.8"));
+            contenedor8.setAnchoM(new BigDecimal("1.5"));
+            contenedor8.setAltoM(new BigDecimal("1.0"));
+            contenedor8.setDescripcion("Material de oficina");
+            contenedor8.setClienteId(cliente2.getId());
+            contenedor8.setCreatedAt(LocalDateTime.now());
+            contenedorRepository.save(contenedor8);
+
+            Contenedor contenedor9 = new Contenedor();
+            contenedor9.setIdentificacion("CONT-009-2024");
+            contenedor9.setPesoKg(new BigDecimal("1100.00"));
+            contenedor9.setVolumenM3(new BigDecimal("5.5"));
+            contenedor9.setLargoM(new BigDecimal("2.5"));
+            contenedor9.setAnchoM(new BigDecimal("2.0"));
+            contenedor9.setAltoM(new BigDecimal("1.1"));
+            contenedor9.setDescripcion("Electrodomésticos");
+            contenedor9.setClienteId(cliente3.getId());
+            contenedor9.setCreatedAt(LocalDateTime.now());
+            contenedorRepository.save(contenedor9);
+
+            Contenedor contenedor10 = new Contenedor();
+            contenedor10.setIdentificacion("CONT-010-2024");
+            contenedor10.setPesoKg(new BigDecimal("280.00"));
+            contenedor10.setVolumenM3(new BigDecimal("1.5"));
+            contenedor10.setLargoM(new BigDecimal("1.5"));
+            contenedor10.setAnchoM(new BigDecimal("1.0"));
+            contenedor10.setAltoM(new BigDecimal("1.0"));
+            contenedor10.setDescripcion("Herramientas pequeñas");
+            contenedor10.setClienteId(cliente1.getId());
+            contenedor10.setCreatedAt(LocalDateTime.now());
+            contenedorRepository.save(contenedor10);
+
             log.info("✓ Cargados {} contenedores", contenedorRepository.count());
 
             // ============================================
@@ -471,6 +508,42 @@ public class DataSeeder {
                     solicitud7.getFechaSolicitud(),
                     null, // Estado actual
                     "Solicitud creada desde app - Pendiente de validación");
+
+            // SOLICITUD 11: BORRADOR - Para prueba completa del flujo (Córdoba → Buenos Aires DIRECTO)
+            Contenedor contenedor11 = new Contenedor();
+            contenedor11.setIdentificacion("CONT-TEST-2024");
+            contenedor11.setPesoKg(new BigDecimal("600.00"));
+            contenedor11.setVolumenM3(new BigDecimal("3.0"));
+            contenedor11.setLargoM(new BigDecimal("2.0"));
+            contenedor11.setAnchoM(new BigDecimal("1.5"));
+            contenedor11.setAltoM(new BigDecimal("1.0"));
+            contenedor11.setDescripcion("Contenedor de prueba para flujo completo");
+            contenedor11.setClienteId(cliente1.getId());
+            contenedor11.setCreatedAt(LocalDateTime.now());
+            contenedorRepository.save(contenedor11);
+
+            Solicitud solicitud11 = new Solicitud();
+            solicitud11.setNumero("SOL-TEST-2024");
+            solicitud11.setClienteId(cliente1.getId());
+            solicitud11.setContenedorId(contenedor11.getId());
+            solicitud11.setOrigenId(1L); // Córdoba
+            solicitud11.setDestinoId(4L); // Buenos Aires
+            solicitud11.setOrigenDireccion("Av. Colón 1234, Córdoba");
+            solicitud11.setOrigenLatitud(new BigDecimal("-31.416700"));
+            solicitud11.setOrigenLongitud(new BigDecimal("-64.183300"));
+            solicitud11.setDestinoDireccion("Av. Ramos Mejía 1302, CABA");
+            solicitud11.setDestinoLatitud(new BigDecimal("-34.587500"));
+            solicitud11.setDestinoLongitud(new BigDecimal("-58.373600"));
+            solicitud11.setEstado("BORRADOR");
+            solicitud11.setCostoEstimado(new BigDecimal("50000.00"));
+            solicitud11.setTiempoEstimadoMin(720); // 12 horas
+            solicitud11.setObservaciones("Solicitud para prueba completa: Asignar ruta → Asignar camión → Iniciar → Finalizar");
+            solicitud11.setFechaSolicitud(LocalDateTime.now());
+            solicitud11.setCreatedAt(LocalDateTime.now());
+            solicitud11.setUpdatedAt(LocalDateTime.now());
+            solicitudRepository.save(solicitud11);
+
+            log.info("✅ Solicitud TEST creada (ID=11): SOL-TEST-2024 - Córdoba → Buenos Aires");
             
             log.info("✓ Creados {} registros de historial de estados", solicitudCambioEstadoRepository.count());
 

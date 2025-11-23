@@ -1,10 +1,8 @@
 package ar.edu.tpi.logistica.services;
 
-import ar.edu.tpi.logistica.clients.GeoApiClient;
 import ar.edu.tpi.logistica.clients.SeguimientoServiceClient;
 import ar.edu.tpi.logistica.config.MetricasLogistica;
 import ar.edu.tpi.logistica.dto.CostoRealDTO;
-import ar.edu.tpi.logistica.dto.DistanciaDTO;
 import ar.edu.tpi.logistica.dto.TramoDTO;
 import ar.edu.tpi.logistica.entities.Camion;
 import ar.edu.tpi.logistica.entities.Ruta;
@@ -41,9 +39,6 @@ public class TramoService {
 
     @Autowired
     private CamionRepository camionRepository;
-
-    @Autowired
-    private GeoApiClient geoApiClient;
 
     @Autowired
     private CostoService costoService;
@@ -107,66 +102,6 @@ public class TramoService {
         return tramos.stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public TramoDTO crear(TramoDTO tramoDTO) {
-        String correlationId = MDC.get("correlationId");
-        log.debug("[CID={}] Creando tramo para ruta: {}", correlationId, tramoDTO.getRutaId());
-        
-        // Validar que la ruta existe
-        Ruta ruta = rutaRepository.findById(tramoDTO.getRutaId())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", tramoDTO.getRutaId()));
-
-        Tramo tramo = convertirAEntidad(tramoDTO);
-        tramo.setRuta(ruta);
-        tramo.setCreatedAt(LocalDateTime.now());
-        tramo.setEstado(Tramo.EstadoTramo.ESTIMADO);
-
-        // Calcular distancia si tenemos coordenadas
-        if (tramo.getOrigenLatitud() != null && tramo.getOrigenLongitud() != null &&
-            tramo.getDestinoLatitud() != null && tramo.getDestinoLongitud() != null) {
-            try {
-                // Formatear coordenadas como strings para el servicio GeoAPI
-                String origen = tramo.getOrigenLatitud() + "," + tramo.getOrigenLongitud();
-                String destino = tramo.getDestinoLatitud() + "," + tramo.getDestinoLongitud();
-                
-                DistanciaDTO distancia = geoApiClient.calcularDistancia(origen, destino);
-                
-                if (distancia != null) {
-                    tramo.setDistanciaKm(distancia.getKilometros());
-                    log.debug("[CID={}] Distancia calculada: {} km ({})", correlationId, distancia.getKilometros(), distancia.getDuracionTexto());
-                }
-            } catch (Exception e) {
-                log.warn("[CID={}] No se pudo calcular distancia con GeoAPI: {}", correlationId, e.getMessage());
-                throw new ServicioExternoException("GeoAPI", "Error al calcular distancia: " + e.getMessage());
-            }
-        }
-
-        Tramo guardado = tramoRepository.save(tramo);
-        log.info("[CID={}] Tramo creado exitosamente con ID: {}", correlationId, guardado.getId());
-        return convertirADTO(guardado);
-    }
-
-    @Transactional
-    public TramoDTO actualizar(Long id, TramoDTO tramoDTO) {
-        Tramo tramo = tramoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Tramo no encontrado"));
-
-        tramo.setOrden(tramoDTO.getOrden());
-        tramo.setDistanciaKm(tramoDTO.getDistanciaKm());
-        tramo.setCostoAproximado(tramoDTO.getCostoAproximado() != null ? tramoDTO.getCostoAproximado().doubleValue() : null);
-        tramo.setCostoReal(tramoDTO.getCostoReal() != null ? tramoDTO.getCostoReal().doubleValue() : null);
-        tramo.setFechaInicioEstimada(tramoDTO.getFechaInicioEstimada());
-        tramo.setFechaFinEstimada(tramoDTO.getFechaFinEstimada());
-
-        if (tramoDTO.getTipo() != null) {
-            tramo.setTipo(Tramo.TipoTramo.valueOf(tramoDTO.getTipo()));
-        }
-
-        Tramo actualizado = tramoRepository.save(tramo);
-        log.info("Tramo actualizado: {}", id);
-        return convertirADTO(actualizado);
     }
 
     @Transactional
@@ -265,6 +200,16 @@ public class TramoService {
         tramo.setCamionId(camionId);
         tramo.setEstado(Tramo.EstadoTramo.ASIGNADO);
 
+        // 💰 CALCULAR COSTO APROXIMADO DEL TRAMO
+        try {
+            BigDecimal costoAproximadoTramo = costoService.calcularCostoAproximadoTramo(tramo);
+            tramo.setCostoAproximado(costoAproximadoTramo.doubleValue());
+            log.info("[CID={}] Costo aproximado del tramo {}: ${}", correlationId, tramoId, costoAproximadoTramo);
+        } catch (Exception e) {
+            log.error("[CID={}] Error al calcular costo aproximado del tramo {}: {}", correlationId, tramoId, e.getMessage());
+            // No bloqueamos la asignación por error en cálculo de costo
+        }
+
         // Marcar camión como no disponible
         camion.setDisponible(false);
         camionRepository.save(camion);
@@ -360,6 +305,16 @@ public class TramoService {
         long duracionMinutos = ChronoUnit.MINUTES.between(tramo.getFechaInicioReal(), fechaFin);
         log.debug("[CID={}] Tramo {} finalizado - Duración: {} minutos", correlationId, tramoId, duracionMinutos);
 
+        // 💰 CALCULAR COSTO REAL DEL TRAMO INDIVIDUAL
+        try {
+            BigDecimal costoRealTramo = costoService.calcularCostoRealTramo(tramo);
+            tramo.setCostoReal(costoRealTramo.doubleValue());
+            log.info("[CID={}] Costo real del tramo {}: ${}", correlationId, tramoId, costoRealTramo);
+        } catch (Exception e) {
+            log.error("[CID={}] Error al calcular costo real del tramo {}: {}", correlationId, tramoId, e.getMessage());
+            // No bloqueamos la finalización por error en cálculo de costo
+        }
+
         // Liberar camión
         if (tramo.getCamionId() != null) {
             camionRepository.findById(tramo.getCamionId()).ifPresent(camion -> {
@@ -416,23 +371,6 @@ public class TramoService {
         return convertirADTO(actualizado);
     }
 
-    @Transactional
-    public void eliminar(Long id) {
-        Tramo tramo = tramoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Tramo no encontrado"));
-
-        // Si el tramo tiene camión asignado y está en ejecución, liberar el camión
-        if (tramo.getCamionId() != null && tramo.getEstado() != Tramo.EstadoTramo.FINALIZADO) {
-            camionRepository.findById(tramo.getCamionId()).ifPresent(camion -> {
-                camion.setDisponible(true);
-                camionRepository.save(camion);
-            });
-        }
-
-        tramoRepository.deleteById(id);
-        log.info("Tramo eliminado: {}", id);
-    }
-
     private TramoDTO convertirADTO(Tramo tramo) {
         TramoDTO dto = new TramoDTO();
         dto.setId(tramo.getId());
@@ -456,32 +394,5 @@ public class TramoService {
         dto.setCamionId(tramo.getCamionId());
         dto.setCreatedAt(tramo.getCreatedAt());
         return dto;
-    }
-
-    private Tramo convertirAEntidad(TramoDTO dto) {
-        Tramo tramo = new Tramo();
-        tramo.setId(dto.getId());
-        tramo.setOrden(dto.getOrden());
-        tramo.setOrigenDepositoId(dto.getOrigenDepositoId());
-        tramo.setDestinoDepositoId(dto.getDestinoDepositoId());
-        tramo.setOrigenLatitud(dto.getOrigenLatitud());
-        tramo.setOrigenLongitud(dto.getOrigenLongitud());
-        tramo.setDestinoLatitud(dto.getDestinoLatitud());
-        tramo.setDestinoLongitud(dto.getDestinoLongitud());
-        if (dto.getTipo() != null) {
-            tramo.setTipo(Tramo.TipoTramo.valueOf(dto.getTipo()));
-        }
-        if (dto.getEstado() != null) {
-            tramo.setEstado(Tramo.EstadoTramo.valueOf(dto.getEstado()));
-        }
-        tramo.setDistanciaKm(dto.getDistanciaKm());
-        tramo.setCostoAproximado(dto.getCostoAproximado() != null ? dto.getCostoAproximado().doubleValue() : null);
-        tramo.setCostoReal(dto.getCostoReal() != null ? dto.getCostoReal().doubleValue() : null);
-        tramo.setFechaInicioEstimada(dto.getFechaInicioEstimada());
-        tramo.setFechaFinEstimada(dto.getFechaFinEstimada());
-        tramo.setFechaInicioReal(dto.getFechaInicioReal());
-        tramo.setFechaFinReal(dto.getFechaFinReal());
-        tramo.setCamionId(dto.getCamionId());
-        return tramo;
     }
 }

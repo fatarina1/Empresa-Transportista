@@ -213,9 +213,9 @@ public class CostoService {
     }
 
     /**
-     * Calcula múltiples rutas tentativas alternativas con costos estimados.
-     * Genera automáticamente combinaciones de depósitos intermedios.
-     * Retorna al menos 2-3 alternativas diferentes.
+     * Calcula 2 rutas alternativas con costos estimados:
+     * 1. Ruta directa (origen → destino, sin depósitos intermedios)
+     * 2. Ruta con depósitos intermedios (selección automática inteligente)
      */
     @Transactional(readOnly = true)
     public RutasAlternativasDTO calcularRutaTentativa(CalcularRutaTentativaRequest request) {
@@ -249,46 +249,47 @@ public class CostoService {
                 throw new DatosInvalidosException("No hay camiones disponibles con capacidad suficiente");
             }
 
-            // Generar múltiples alternativas de rutas
             List<RutaTentativaDTO> alternativas = new ArrayList<>();
             
-            // Alternativa 1: Ruta directa (sin depósitos intermedios)
+            // ALTERNATIVA 1: Ruta directa (sin depósitos intermedios)
+            log.debug("[CID={}] Calculando ruta directa (sin depósitos)", correlationId);
             RutaTentativaDTO rutaDirecta = calcularRutaConDepositos(
-                    origen, destino, new ArrayList<>(), camionesElegibles, request, "Ruta directa sin paradas");
+                    origen, destino, new ArrayList<>(), camionesElegibles, request, 
+                    "Ruta directa sin paradas intermedias");
             alternativas.add(rutaDirecta);
             
-            // Alternativa 2 y 3: Rutas con depósitos intermedios
+            // ALTERNATIVA 2: Ruta con depósitos intermedios (selección automática)
             if (!depositosDisponibles.isEmpty()) {
-                // Generar combinaciones de 1 depósito
-                for (Deposito deposito : depositosDisponibles.subList(0, Math.min(2, depositosDisponibles.size()))) {
-                    List<Deposito> depositosIntermedio = new ArrayList<>();
-                    depositosIntermedio.add(deposito);
-                    
-                    RutaTentativaDTO rutaConDeposito = calcularRutaConDepositos(
-                            origen, destino, depositosIntermedio, camionesElegibles, request,
-                            "Ruta con parada en " + deposito.getNombre());
-                    alternativas.add(rutaConDeposito);
-                }
+                log.debug("[CID={}] Seleccionando depósitos intermedios de forma automática", correlationId);
+                List<Deposito> depositosSeleccionados = seleccionarDepositosIntermedios(
+                        origen, destino, depositosDisponibles);
                 
-                // Si hay más de un depósito, generar una ruta con 2 depósitos
-                if (depositosDisponibles.size() >= 2) {
-                    List<Deposito> dosDepositos = depositosDisponibles.subList(0, 2);
-                    RutaTentativaDTO rutaDosDepositos = calcularRutaConDepositos(
-                            origen, destino, dosDepositos, camionesElegibles, request,
-                            "Ruta con paradas en " + dosDepositos.get(0).getNombre() + " y " + dosDepositos.get(1).getNombre());
-                    alternativas.add(rutaDosDepositos);
+                if (!depositosSeleccionados.isEmpty()) {
+                    String descripcion = depositosSeleccionados.size() == 1 
+                            ? "Ruta con parada en " + depositosSeleccionados.get(0).getNombre()
+                            : "Ruta con paradas en " + depositosSeleccionados.stream()
+                                    .map(Deposito::getNombre)
+                                    .collect(Collectors.joining(", "));
+                    
+                    RutaTentativaDTO rutaConDepositos = calcularRutaConDepositos(
+                            origen, destino, depositosSeleccionados, camionesElegibles, request, descripcion);
+                    alternativas.add(rutaConDepositos);
+                    
+                    log.info("[CID={}] Depósitos seleccionados: {}", correlationId, 
+                            depositosSeleccionados.stream().map(Deposito::getNombre).collect(Collectors.joining(", ")));
+                } else {
+                    log.warn("[CID={}] No se pudieron seleccionar depósitos intermedios", correlationId);
                 }
             }
-            
-            // Ordenar por costo (de menor a mayor)
-            alternativas.sort((a, b) -> a.getCostoEstimadoTotal().compareTo(b.getCostoEstimadoTotal()));
             
             log.info("[CID={}] Generadas {} rutas alternativas", correlationId, alternativas.size());
             
             RutasAlternativasDTO resultado = new RutasAlternativasDTO(
                     alternativas,
                     alternativas.size(),
-                    "Se generaron " + alternativas.size() + " rutas alternativas ordenadas por costo"
+                    alternativas.size() == 2 
+                            ? "Ruta directa vs ruta con depósitos intermedios seleccionados automáticamente"
+                            : "Solo ruta directa disponible (sin depósitos activos)"
             );
             
             metricas.finalizarMedicionRutaTentativa(sample);
@@ -301,6 +302,110 @@ public class CostoService {
             log.error("[CID={}] Error inesperado al calcular rutas alternativas: {}", correlationId, e.getMessage(), e);
             throw new ServicioExternoException("GeoAPI", "Error al calcular rutas alternativas: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Selecciona automáticamente depósitos intermedios óptimos entre origen y destino.
+     * Estrategia: Selecciona el depósito más cercano al punto medio de la ruta.
+     * Si hay muchos depósitos disponibles, puede seleccionar hasta 2 depósitos estratégicos.
+     */
+    private List<Deposito> seleccionarDepositosIntermedios(Ubicacion origen, Ubicacion destino, 
+                                                            List<Deposito> depositosDisponibles) {
+        List<Deposito> seleccionados = new ArrayList<>();
+        
+        if (depositosDisponibles.isEmpty()) {
+            return seleccionados;
+        }
+        
+        // Calcular punto medio entre origen y destino
+        double latMedio = (origen.getLatitud() + destino.getLatitud()) / 2.0;
+        double lngMedio = (origen.getLongitud() + destino.getLongitud()) / 2.0;
+        
+        // Encontrar el depósito más cercano al punto medio
+        Deposito depositoMasCercano = depositosDisponibles.stream()
+                .min((d1, d2) -> {
+                    double dist1 = calcularDistanciaEuclidiana(
+                            latMedio, lngMedio,
+                            d1.getUbicacion().getLatitud(), d1.getUbicacion().getLongitud());
+                    double dist2 = calcularDistanciaEuclidiana(
+                            latMedio, lngMedio,
+                            d2.getUbicacion().getLatitud(), d2.getUbicacion().getLongitud());
+                    return Double.compare(dist1, dist2);
+                })
+                .orElse(null);
+        
+        if (depositoMasCercano != null) {
+            seleccionados.add(depositoMasCercano);
+            
+            // Si hay más de 3 depósitos disponibles, intentar agregar un segundo depósito estratégico
+            if (depositosDisponibles.size() > 3) {
+                // Buscar un depósito entre origen y el primer depósito O entre el primer depósito y destino
+                Deposito segundoDeposito = depositosDisponibles.stream()
+                        .filter(d -> !d.equals(depositoMasCercano)) // No seleccionar el mismo
+                        .min((d1, d2) -> {
+                            // Calcular cercanía a la línea origen-destino
+                            double dist1Linea = calcularDistanciaAPuntoEnLinea(
+                                    d1.getUbicacion().getLatitud(), d1.getUbicacion().getLongitud(),
+                                    origen.getLatitud(), origen.getLongitud(),
+                                    destino.getLatitud(), destino.getLongitud());
+                            double dist2Linea = calcularDistanciaAPuntoEnLinea(
+                                    d2.getUbicacion().getLatitud(), d2.getUbicacion().getLongitud(),
+                                    origen.getLatitud(), origen.getLongitud(),
+                                    destino.getLatitud(), destino.getLongitud());
+                            return Double.compare(dist1Linea, dist2Linea);
+                        })
+                        .orElse(null);
+                
+                if (segundoDeposito != null) {
+                    // Ordenar los depósitos por cercanía al origen para mantener un orden lógico
+                    double distOrigen1 = calcularDistanciaEuclidiana(
+                            origen.getLatitud(), origen.getLongitud(),
+                            depositoMasCercano.getUbicacion().getLatitud(), 
+                            depositoMasCercano.getUbicacion().getLongitud());
+                    double distOrigen2 = calcularDistanciaEuclidiana(
+                            origen.getLatitud(), origen.getLongitud(),
+                            segundoDeposito.getUbicacion().getLatitud(), 
+                            segundoDeposito.getUbicacion().getLongitud());
+                    
+                    if (distOrigen2 < distOrigen1) {
+                        // Insertar al principio si está más cerca del origen
+                        seleccionados.add(0, segundoDeposito);
+                    } else {
+                        seleccionados.add(segundoDeposito);
+                    }
+                }
+            }
+        }
+        
+        return seleccionados;
+    }
+    
+    /**
+     * Calcula la distancia euclidiana entre dos puntos geográficos (aproximada)
+     */
+    private double calcularDistanciaEuclidiana(double lat1, double lng1, double lat2, double lng2) {
+        double diffLat = lat2 - lat1;
+        double diffLng = lng2 - lng1;
+        return Math.sqrt(diffLat * diffLat + diffLng * diffLng);
+    }
+    
+    /**
+     * Calcula la distancia perpendicular de un punto a una línea (origen-destino)
+     */
+    private double calcularDistanciaAPuntoEnLinea(double puntoLat, double puntoLng,
+                                                   double lineaLat1, double lineaLng1,
+                                                   double lineaLat2, double lineaLng2) {
+        // Fórmula de distancia de punto a línea
+        double numerador = Math.abs(
+                (lineaLat2 - lineaLat1) * puntoLng - 
+                (lineaLng2 - lineaLng1) * puntoLat + 
+                lineaLng2 * lineaLat1 - 
+                lineaLat2 * lineaLng1);
+        double denominador = Math.sqrt(
+                Math.pow(lineaLat2 - lineaLat1, 2) + 
+                Math.pow(lineaLng2 - lineaLng1, 2));
+        
+        return denominador == 0 ? Double.MAX_VALUE : numerador / denominador;
     }
     
     /**
@@ -342,6 +447,7 @@ public class CostoService {
         BigDecimal costoTotalEstimado = BigDecimal.ZERO;
         Integer tiempoTotalEstimado = 0;
         BigDecimal distanciaTotal = BigDecimal.ZERO;
+        BigDecimal costoTotalEstadiasEstimado = BigDecimal.ZERO; // Nuevo: costo de estadías en depósitos
         int orden = 1;
 
         // Primer tramo: origen -> primer depósito o destino
@@ -373,10 +479,25 @@ public class CostoService {
                     distanciaPrimerTramo.getDuracionMinutos() : 
                     (int)(distanciaPrimerTramo.getKilometros() * 1.5); // Estimación: 1.5 min por km
 
+            // Obtener coordenadas de destino del tramo
+            BigDecimal destinoLat, destinoLon;
+            if (!depositosIntermedios.isEmpty()) {
+                Deposito primerDeposito = depositosIntermedios.get(0);
+                destinoLat = BigDecimal.valueOf(primerDeposito.getUbicacion().getLatitud());
+                destinoLon = BigDecimal.valueOf(primerDeposito.getUbicacion().getLongitud());
+            } else {
+                destinoLat = BigDecimal.valueOf(destino.getLatitud());
+                destinoLon = BigDecimal.valueOf(destino.getLongitud());
+            }
+
             tramos.add(new RutaTentativaDTO.TramoTentativoDTO(
                     orden++,
                     origen.getDireccion(),
                     nombreSiguiente,
+                    BigDecimal.valueOf(origen.getLatitud()),
+                    BigDecimal.valueOf(origen.getLongitud()),
+                    destinoLat,
+                    destinoLon,
                     distanciaKm,
                     duracionMin,
                     costoTramo,
@@ -386,6 +507,20 @@ public class CostoService {
             costoTotalEstimado = costoTotalEstimado.add(costoTramo);
             tiempoTotalEstimado += duracionMin;
             distanciaTotal = distanciaTotal.add(distanciaKm);
+            
+            // Agregar tiempo de estadía estimado si termina en depósito y hay más tramos
+            if (!depositosIntermedios.isEmpty() && orden <= depositosIntermedios.size()) {
+                int horasEstadiaEstimada = 24; // 1 día de estadía estimada
+                tiempoTotalEstimado += (horasEstadiaEstimada * 60); // Convertir a minutos
+                
+                // Calcular costo de estadía
+                Deposito depositoDestino = depositosIntermedios.get(orden - 2); // orden-1 para índice, -1 más porque ya incrementamos orden
+                BigDecimal costoEstadia = BigDecimal.valueOf(depositoDestino.getCostoEstadiaDiaria())
+                        .multiply(BigDecimal.valueOf(horasEstadiaEstimada / 24.0))
+                        .setScale(2, RoundingMode.HALF_UP);
+                
+                costoTotalEstadiasEstimado = costoTotalEstadiasEstimado.add(costoEstadia);
+            }
         }
 
         // Tramos entre depósitos
@@ -416,6 +551,10 @@ public class CostoService {
                             orden++,
                             depositoActual.getNombre(),
                             depositoSiguiente.getNombre(),
+                            BigDecimal.valueOf(depositoActual.getUbicacion().getLatitud()),
+                            BigDecimal.valueOf(depositoActual.getUbicacion().getLongitud()),
+                            BigDecimal.valueOf(depositoSiguiente.getUbicacion().getLatitud()),
+                            BigDecimal.valueOf(depositoSiguiente.getUbicacion().getLongitud()),
                             distanciaKm,
                             duracionMin,
                             costoTramo,
@@ -425,6 +564,13 @@ public class CostoService {
                     costoTotalEstimado = costoTotalEstimado.add(costoTramo);
                     tiempoTotalEstimado += duracionMin;
                     distanciaTotal = distanciaTotal.add(distanciaKm);
+                    
+                    // Agregar tiempo y costo de estadía en el primer depósito
+                    int horasEstadiaEstimada = 24; // 1 día de estadía estimada
+                    tiempoTotalEstimado += (horasEstadiaEstimada * 60);
+                    
+                    BigDecimal costoEstadia = BigDecimal.valueOf(depositoActual.getCostoEstadiaDiaria());
+                    costoTotalEstadiasEstimado = costoTotalEstadiasEstimado.add(costoEstadia);
                 }
             } else {
                 // Último depósito -> destino
@@ -443,6 +589,10 @@ public class CostoService {
                             orden++,
                             depositoActual.getNombre(),
                             destino.getDireccion(),
+                            BigDecimal.valueOf(depositoActual.getUbicacion().getLatitud()),
+                            BigDecimal.valueOf(depositoActual.getUbicacion().getLongitud()),
+                            BigDecimal.valueOf(destino.getLatitud()),
+                            BigDecimal.valueOf(destino.getLongitud()),
                             distanciaKm,
                             duracionMin,
                             costoTramo,
@@ -454,6 +604,14 @@ public class CostoService {
                     distanciaTotal = distanciaTotal.add(distanciaKm);
                 }
             }
+        }
+
+        // Agregar costo de estadías al costo total
+        costoTotalEstimado = costoTotalEstimado.add(costoTotalEstadiasEstimado);
+        
+        if (costoTotalEstadiasEstimado.compareTo(BigDecimal.ZERO) > 0) {
+            log.info("[Ruta con {} depósitos] Costo total de estadías: ${} (24h por depósito)", 
+                    depositosIntermedios.size(), costoTotalEstadiasEstimado);
         }
 
         return new RutaTentativaDTO(
@@ -509,5 +667,111 @@ public class CostoService {
                 .map(config -> new BigDecimal(config.getValor()))
                 .orElse(CARGO_GESTION_DEFAULT);
     }
-}
 
+    /**
+     * Calcula el costo aproximado de un tramo individual basado en estimaciones.
+     * Se usa al asignar el camión al tramo.
+     */
+    public BigDecimal calcularCostoAproximadoTramo(Tramo tramo) {
+        if (tramo.getCamionId() == null) {
+            log.warn("No se puede calcular costo aproximado sin camión asignado");
+            return BigDecimal.ZERO;
+        }
+
+        Camion camion = camionRepository.findById(tramo.getCamionId())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Camion", tramo.getCamionId()));
+
+        BigDecimal valorLitro = obtenerValorLitroCombustible();
+        BigDecimal cargoGestion = obtenerCargoGestionPorTramo();
+
+        // Costo por distancia
+        BigDecimal costoKm = BigDecimal.valueOf(tramo.getDistanciaKm() * camion.getCostoKmBase());
+
+        // Costo de combustible
+        BigDecimal costoCombustible = BigDecimal.valueOf(tramo.getDistanciaKm() * camion.getConsumoPromedioLitrosKm())
+                .multiply(valorLitro);
+
+        BigDecimal costoTotal = costoKm.add(costoCombustible).add(cargoGestion);
+
+        // Si termina en depósito, agregar costo de estadía (24h)
+        if (tramo.getDestinoDepositoId() != null) {
+            Deposito deposito = depositoRepository.findById(tramo.getDestinoDepositoId())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Deposito", tramo.getDestinoDepositoId()));
+            
+            BigDecimal costoEstadia = BigDecimal.valueOf(deposito.getCostoEstadiaDiaria()); // 1 día
+            costoTotal = costoTotal.add(costoEstadia);
+            
+            log.debug("Costo aproximado del tramo {} incluye estadía de 1 día en {}: ${}",
+                    tramo.getId(), deposito.getNombre(), costoEstadia);
+        }
+
+        return costoTotal.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula el costo real de un tramo individual después de finalizarlo.
+     */
+    public BigDecimal calcularCostoRealTramo(Tramo tramo) {
+        if (tramo.getEstado() != Tramo.EstadoTramo.FINALIZADO) {
+            log.warn("No se puede calcular costo real de tramo no finalizado");
+            return BigDecimal.ZERO;
+        }
+
+        if (tramo.getCamionId() == null) {
+            log.warn("No se puede calcular costo real sin camión asignado");
+            return BigDecimal.ZERO;
+        }
+
+        Camion camion = camionRepository.findById(tramo.getCamionId())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Camion", tramo.getCamionId()));
+
+        BigDecimal valorLitro = obtenerValorLitroCombustible();
+        BigDecimal cargoGestion = obtenerCargoGestionPorTramo();
+
+        // Costo por distancia
+        BigDecimal costoKm = BigDecimal.valueOf(tramo.getDistanciaKm() * camion.getCostoKmBase());
+
+        // Costo de combustible
+        BigDecimal costoCombustible = BigDecimal.valueOf(tramo.getDistanciaKm() * camion.getConsumoPromedioLitrosKm())
+                .multiply(valorLitro);
+
+        BigDecimal costoTotal = costoKm.add(costoCombustible).add(cargoGestion);
+
+        // Si termina en depósito, calcular estadía REAL
+        if (tramo.getDestinoDepositoId() != null && tramo.getFechaFinReal() != null) {
+            Deposito deposito = depositoRepository.findById(tramo.getDestinoDepositoId())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Deposito", tramo.getDestinoDepositoId()));
+
+            // Buscar el siguiente tramo de la misma ruta
+            List<Tramo> todosLosTramos = tramoRepository.findByRutaIdOrderByOrdenAsc(tramo.getRuta().getId());
+            Tramo siguienteTramo = todosLosTramos.stream()
+                    .filter(t -> t.getOrden() == tramo.getOrden() + 1)
+                    .findFirst()
+                    .orElse(null);
+
+            if (siguienteTramo != null && siguienteTramo.getFechaInicioReal() != null) {
+                // Calcular estadía real en días
+                Duration duracionEstadia = Duration.between(tramo.getFechaFinReal(), siguienteTramo.getFechaInicioReal());
+                long diasEstadia = duracionEstadia.toDays();
+                if (diasEstadia == 0 && duracionEstadia.toHours() > 0) {
+                    diasEstadia = 1; // Mínimo 1 día
+                }
+
+                BigDecimal costoEstadia = BigDecimal.valueOf(deposito.getCostoEstadiaDiaria() * diasEstadia);
+                costoTotal = costoTotal.add(costoEstadia);
+
+                log.info("Costo real del tramo {} incluye estadía de {} día(s) en {}: ${}",
+                        tramo.getId(), diasEstadia, deposito.getNombre(), costoEstadia);
+            } else {
+                // Si no hay siguiente tramo o no ha iniciado, usar 1 día por defecto
+                BigDecimal costoEstadia = BigDecimal.valueOf(deposito.getCostoEstadiaDiaria());
+                costoTotal = costoTotal.add(costoEstadia);
+
+                log.debug("Costo real del tramo {} incluye estadía estimada de 1 día en {}: ${}",
+                        tramo.getId(), deposito.getNombre(), costoEstadia);
+            }
+        }
+
+        return costoTotal.setScale(2, RoundingMode.HALF_UP);
+    }
+}

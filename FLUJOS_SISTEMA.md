@@ -210,7 +210,7 @@ Content-Type: application/json
 ## 3. Asignación de Rutas mediante Rutas Alternativas
 
 ### 🗺️ Descripción
-El sistema calcula múltiples rutas alternativas considerando depósitos intermedios y permite seleccionar la más conveniente.
+El sistema calcula automáticamente 2 rutas alternativas: una directa y otra con depósitos intermedios seleccionados inteligentemente según optimización geográfica.
 
 ### 🔄 Flujo de Asignación de Ruta
 
@@ -222,34 +222,38 @@ El sistema calcula múltiples rutas alternativas considerando depósitos interme
      │                      │                            │
      │ 1. Calcular Rutas    │                            │
      │    Alternativas      │                            │
+     │    (solo origen/     │                            │
+     │     destino)         │                            │
      ├────────────────────> │                            │
      │                      │                            │
-     │                      │ 2. GeoAPI: Distancias      │
-     │                      ├──> Origen → Destino        │
-     │                      ├──> Origen → Depósito1 → Destino
-     │                      ├──> Origen → Depósito2 → Destino
-     │                      ├──> Origen → Dep1 → Dep2 → Destino
+     │                      │ 2. Selección Automática    │
+     │                      │    de Depósitos Intermedios│
+     │                      │    (algoritmo geográfico)  │
      │                      │                            │
-     │                      │ 3. Calcular Costos/Tiempos │
+     │                      │ 3. GeoAPI: Distancias      │
+     │                      ├──> Ruta 1: Origen → Destino│
+     │                      ├──> Ruta 2: Origen → Dep(s) → Destino
+     │                      │                            │
+     │                      │ 4. Calcular Costos/Tiempos │
      │                      │    para cada alternativa   │
      │                      │                            │
-     │  Lista de Rutas      │                            │
-     │  Tentativas          │                            │
+     │  2 Rutas Tentativas  │                            │
+     │  (directa + optimizada)                          │
      │ <──────────────────  │                            │
      │                      │                            │
-     │ 4. Seleccionar Ruta  │                            │
+     │ 5. Seleccionar Ruta  │                            │
      │    + solicitudId     │                            │
      ├────────────────────> │                            │
      │                      │                            │
-     │                      │ 5. Crear Ruta Real         │
+     │                      │ 6. Crear Ruta Real         │
      │                      ├──> Estado: PROPUESTA       │
      │                      │    Crear Tramos            │
      │                      │                            │
-     │                      │ 6. Asignar a Solicitud     │
+     │                      │ 7. Asignar a Solicitud     │
      │                      │    (HTTP PATCH)            │
      │                      ├──────────────────────────> │
      │                      │                            │
-     │                      │ 7. Update solicitud.rutaId │
+     │                      │ 8. Update solicitud.rutaId │
      │                      │    Estado: EN_PLANIFICACION│
      │                      │ <────────────────────────  │
      │                      │                            │
@@ -269,64 +273,67 @@ Content-Type: application/json
 {
   "ubicacionOrigenId": 1,
   "ubicacionDestinoId": 2,
-  "depositoIntermedioId": null,  // Opcional: null = todas las alternativas
   "pesoKg": 500.00,
   "volumenM3": 2.5
 }
 ```
 
-**Respuesta: Múltiples Alternativas**
+**Nota:** Los depósitos intermedios se seleccionan automáticamente. No es necesario especificarlos.
+
+**Respuesta: 2 Alternativas**
 
 ```json
-[
-  {
-    "tipoRuta": "DIRECTA",
-    "cantidadTramos": 1,
-    "cantidadDepositos": 0,
-    "costoEstimado": 35000.00,
-    "tiempoEstimadoMin": 420,
-    "distanciaTotal": 700.0,
-    "tramos": [
-      {
-        "orden": 1,
-        "tipo": "ORIGEN_DESTINO",
-        "origenLatitud": -31.4167,
-        "origenLongitud": -64.1833,
-        "destinoLatitud": -34.6037,
-        "destinoLongitud": -58.3816,
-        "distanciaKm": 700.0,
-        "costoEstimado": 35000.00,
-        "tiempoEstimadoMin": 420
-      }
-    ]
-  },
-  {
-    "tipoRuta": "CON_1_DEPOSITO",
-    "cantidadTramos": 2,
-    "cantidadDepositos": 1,
-    "costoEstimado": 38000.00,
-    "tiempoEstimadoMin": 480,
-    "distanciaTotal": 750.0,
-    "tramos": [
-      {
-        "orden": 1,
-        "tipo": "ORIGEN_DEPOSITO",
-        "destinoDepositoId": 1,
-        "distanciaKm": 350.0,
-        "costoEstimado": 17500.00,
-        "tiempoEstimadoMin": 210
-      },
-      {
-        "orden": 2,
-        "tipo": "DEPOSITO_DESTINO",
-        "origenDepositoId": 1,
-        "distanciaKm": 400.0,
-        "costoEstimado": 20500.00,
-        "tiempoEstimadoMin": 270
-      }
-    ]
-  }
-]
+{
+  "alternativas": [
+    {
+      "cantidadTramos": 1,
+      "cantidadDepositos": 0,
+      "costoEstimadoTotal": 35000.00,
+      "tiempoEstimadoMin": 420,
+      "distanciaTotal": 700.0,
+      "tramos": [
+        {
+          "orden": 1,
+          "origen": "Córdoba, Argentina",
+          "destino": "Buenos Aires, Argentina",
+          "distanciaKm": 700.0,
+          "duracionMin": 420,
+          "costoEstimado": 35000.00,
+          "tipoTramo": "ORIGEN_DESTINO"
+        }
+      ]
+    },
+    {
+      "cantidadTramos": 2,
+      "cantidadDepositos": 1,
+      "costoEstimadoTotal": 38000.00,
+      "tiempoEstimadoMin": 480,
+      "distanciaTotal": 750.0,
+      "tramos": [
+        {
+          "orden": 1,
+          "origen": "Córdoba, Argentina",
+          "destino": "Depósito Rosario",
+          "distanciaKm": 350.0,
+          "duracionMin": 210,
+          "costoEstimado": 17500.00,
+          "tipoTramo": "ORIGEN_DEPOSITO"
+        },
+        {
+          "orden": 2,
+          "origen": "Depósito Rosario",
+          "destino": "Buenos Aires, Argentina",
+          "distanciaKm": 400.0,
+          "duracionMin": 270,
+          "costoEstimado": 20500.00,
+          "tipoTramo": "DEPOSITO_DESTINO"
+        }
+      ]
+    }
+  ],
+  "cantidadAlternativas": 2,
+  "observaciones": "Ruta directa vs ruta con depósitos intermedios seleccionados automáticamente"
+}
 ```
 
 **Paso 2: Crear Ruta Real con Tramos**
@@ -339,11 +346,10 @@ Content-Type: application/json
 {
   "solicitudId": 1,
   "rutaTentativa": {
-    // Copiar la ruta seleccionada del paso anterior
-    "tipoRuta": "DIRECTA",
+    // Copiar la ruta seleccionada del array "alternativas"
     "cantidadTramos": 1,
     "cantidadDepositos": 0,
-    "costoEstimado": 35000.00,
+    "costoEstimadoTotal": 35000.00,
     "tiempoEstimadoMin": 420,
     "distanciaTotal": 700.0,
     "tramos": [ /* ... */ ]
@@ -354,20 +360,25 @@ Content-Type: application/json
 
 ### 🎯 Lógica de Generación de Alternativas
 
-**Sin depositoIntermedioId (todas las combinaciones):**
-1. Ruta directa (0 depósitos)
-2. Rutas con 1 depósito intermedio (N alternativas)
-3. Rutas con 2 depósitos intermedios (N×M alternativas)
+El sistema **siempre** genera exactamente **2 rutas alternativas**:
 
-**Con depositoIntermedioId específico:**
-1. Ruta directa (sin depósito)
-2. Ruta pasando por el depósito especificado
+1. **Ruta Directa:** Origen → Destino (sin paradas intermedias)
+2. **Ruta Optimizada:** Origen → Depósito(s) → Destino (1 o 2 depósitos seleccionados automáticamente)
+
+**Algoritmo de Selección de Depósitos:**
+- Calcula el punto medio geográfico entre origen y destino
+- Selecciona el depósito más cercano a ese punto medio
+- Si hay 4+ depósitos disponibles, puede agregar un segundo depósito estratégico alineado con la ruta
+- Los depósitos se ordenan por cercanía al origen para mantener un recorrido lógico
 
 ### 💰 Cálculo de Costos
 
-- **Costo base por km:** $50/km
-- **Parada en depósito:** +$500 por depósito
-- **Costo total = Σ(distancia_tramo × costo_km) + (num_depositos × 500)**
+Para cada ruta alternativa se calcula:
+- **Costo por km** del camión
+- **Consumo de combustible** (litros/km × precio combustible)
+- **Tarifa por volumen** según tabla de tarifas
+- **Cargo de gestión** por tramo
+- **Costo total = Σ(costo_km + costo_combustible + tarifa_volumen + cargo_gestión)**
 
 ---
 

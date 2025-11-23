@@ -25,9 +25,13 @@ public class RutaTentativaDTO {
         private Integer orden;
         private String origenNombre;
         private String destinoNombre;
+        private BigDecimal origenLatitud;
+        private BigDecimal origenLongitud;
+        private BigDecimal destinoLatitud;
+        private BigDecimal destinoLongitud;
         private BigDecimal distanciaKm;
         private Integer tiempoEstimadoMinutos;
         private BigDecimal costoEstimado;
-        private String tipo; // ORIGEN_DEPOSITO, DEPOSITO_DEPOSITO, DEPOSITO_DESTINO
+        private String tipo; // ORIGEN_DEPOSITO, DEPOSITO_DEPOSITO, DEPOSITO_DESTINO, ORIGEN_DESTINO
     }
 }

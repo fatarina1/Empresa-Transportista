@@ -217,12 +217,15 @@ public class DataSeeder {
             tramo1_1.setDistanciaKm(320.0);
             tramo1_1.setEstado(Tramo.EstadoTramo.FINALIZADO);
             tramo1_1.setCamionId(camion1.getId());
+            tramo1_1.setFechaInicioEstimada(now.minusDays(4));
+            tramo1_1.setFechaFinEstimada(now.minusDays(4).plusHours(6)); // 6 horas estimadas
             tramo1_1.setFechaInicioReal(now.minusDays(4));
-            tramo1_1.setFechaFinReal(now.minusDays(3)); // Llegó hace 3 días
+            tramo1_1.setFechaFinReal(now.minusDays(3).plusHours(18)); // Llegó hace 3 días
             tramo1_1.setCreatedAt(now.minusDays(5));
             tramoRepository.save(tramo1_1);
 
             // Tramo 2: Rosario → Buenos Aires (ASIGNADO, aún no inicia)
+            // Incluye 24h de estadía en depósito antes de iniciar
             Tramo tramo1_2 = new Tramo();
             tramo1_2.setRuta(ruta1);
             tramo1_2.setOrden(2);
@@ -235,6 +238,9 @@ public class DataSeeder {
             tramo1_2.setDistanciaKm(300.0);
             tramo1_2.setEstado(Tramo.EstadoTramo.ASIGNADO);
             tramo1_2.setCamionId(camion2.getId());
+            // Inicio estimado: 24h después del fin del tramo anterior (estadía)
+            tramo1_2.setFechaInicioEstimada(now.minusDays(4).plusHours(30)); // 6h viaje + 24h estadía
+            tramo1_2.setFechaFinEstimada(now.minusDays(4).plusHours(35)); // + 5h de viaje
             tramo1_2.setCreatedAt(now.minusDays(5));
             tramoRepository.save(tramo1_2);
 
@@ -264,12 +270,15 @@ public class DataSeeder {
             tramo2_1.setDistanciaKm(1050.0);
             tramo2_1.setEstado(Tramo.EstadoTramo.FINALIZADO);
             tramo2_1.setCamionId(camion2.getId());
+            tramo2_1.setFechaInicioEstimada(now.minusDays(9));
+            tramo2_1.setFechaFinEstimada(now.minusDays(9).plusHours(15)); // 15h estimadas
             tramo2_1.setFechaInicioReal(now.minusDays(9));
             tramo2_1.setFechaFinReal(now.minusDays(7)); // Llegó hace 7 días
             tramo2_1.setCreatedAt(now.minusDays(10));
             tramoRepository.save(tramo2_1);
 
             // Tramo 2.2: Mendoza → Córdoba (ASIGNADO, esperando)
+            // Incluye 24h de estadía en depósito antes de iniciar
             Tramo tramo2_2 = new Tramo();
             tramo2_2.setRuta(ruta2);
             tramo2_2.setOrden(2);
@@ -281,6 +290,9 @@ public class DataSeeder {
             tramo2_2.setTipo(Tramo.TipoTramo.DEPOSITO_DESTINO);
             tramo2_2.setDistanciaKm(608.0);
             tramo2_2.setEstado(Tramo.EstadoTramo.ASIGNADO);
+            // Inicio estimado: 24h después del fin del tramo anterior (estadía)
+            tramo2_2.setFechaInicioEstimada(now.minusDays(9).plusHours(39)); // 15h viaje + 24h estadía
+            tramo2_2.setFechaFinEstimada(now.minusDays(9).plusHours(49)); // + 10h de viaje
             tramo2_2.setCreatedAt(now.minusDays(10));
             tramoRepository.save(tramo2_2);
 
@@ -305,6 +317,8 @@ public class DataSeeder {
             tramo3_1.setTipo(Tramo.TipoTramo.ORIGEN_DESTINO);
             tramo3_1.setDistanciaKm(608.0);
             tramo3_1.setEstado(Tramo.EstadoTramo.ESTIMADO);
+            tramo3_1.setFechaInicioEstimada(now.plusHours(2));
+            tramo3_1.setFechaFinEstimada(now.plusHours(12)); // 10h estimadas
             tramo3_1.setCreatedAt(now.minusDays(1));
             tramoRepository.save(tramo3_1);
 

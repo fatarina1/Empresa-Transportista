@@ -72,22 +72,6 @@ public class RutaService {
         return resultado;
     }
 
-    @Transactional
-    public RutaDTO crear(RutaDTO rutaDTO) {
-        String correlationId = MDC.get("correlationId");
-        log.debug("[CID={}] Creando nueva ruta", correlationId);
-
-        Ruta ruta = convertirAEntidad(rutaDTO);
-        ruta.setCreatedAt(LocalDateTime.now());
-        ruta.setEstado(Ruta.EstadoRuta.PROPUESTA);
-        
-        Ruta guardada = rutaRepository.save(ruta);
-        metricas.incrementarRutasCreadas();
-        
-        log.info("[CID={}] Ruta creada exitosamente con ID: {}", correlationId, guardada.getId());
-        return convertirADTO(guardada);
-    }
-
     /**
      * Crea una ruta completa con todos sus tramos a partir de una ruta tentativa seleccionada.
      * También vincula la ruta con la solicitud correspondiente.
@@ -118,9 +102,14 @@ public class RutaService {
         Ruta rutaGuardada = rutaRepository.save(ruta);
         log.debug("[CID={}] Ruta creada con ID: {}", correlationId, rutaGuardada.getId());
 
-        // 2. Crear los tramos asociados
+        // 2. Crear los tramos asociados con fechas estimadas
         List<Tramo> tramosCreados = new ArrayList<>();
-        for (RutaTentativaDTO.TramoTentativoDTO tramoTentativo : rutaTentativa.getTramos()) {
+        LocalDateTime fechaActual = LocalDateTime.now();
+        LocalDateTime fechaInicioTramo = fechaActual.plusHours(2); // La ruta inicia 2 horas después de ser creada
+        
+        for (int i = 0; i < rutaTentativa.getTramos().size(); i++) {
+            RutaTentativaDTO.TramoTentativoDTO tramoTentativo = rutaTentativa.getTramos().get(i);
+            
             Tramo tramo = new Tramo();
             tramo.setRuta(rutaGuardada); // Relación ManyToOne
             tramo.setOrden(tramoTentativo.getOrden());
@@ -133,19 +122,54 @@ public class RutaService {
                 tramo.setTipo(Tramo.TipoTramo.valueOf(tramoTentativo.getTipo()));
             }
             
-            // Coordenadas de origen y destino (vienen de la API de GeoAPI)
-            // Nota: Las coordenadas exactas deberían venir del frontend o calcularse
-            // Por ahora las dejamos null y se asignarán cuando se asigne el camión
+            // Calcular fechas estimadas basadas en la duración del tramo
+            tramo.setFechaInicioEstimada(fechaInicioTramo);
+            
+            Integer duracionMinutos = tramoTentativo.getTiempoEstimadoMinutos() != null 
+                    ? tramoTentativo.getTiempoEstimadoMinutos() 
+                    : (int)(tramoTentativo.getDistanciaKm().doubleValue() * 1.5); // Fallback: 1.5 min/km
+            
+            LocalDateTime fechaFinTramo = fechaInicioTramo.plusMinutes(duracionMinutos);
+            tramo.setFechaFinEstimada(fechaFinTramo);
+            
+            // Guardar coordenadas de origen y destino
+            if (tramoTentativo.getOrigenLatitud() != null && tramoTentativo.getOrigenLongitud() != null) {
+                tramo.setOrigenLatitud(tramoTentativo.getOrigenLatitud().doubleValue());
+                tramo.setOrigenLongitud(tramoTentativo.getOrigenLongitud().doubleValue());
+            }
+            
+            if (tramoTentativo.getDestinoLatitud() != null && tramoTentativo.getDestinoLongitud() != null) {
+                tramo.setDestinoLatitud(tramoTentativo.getDestinoLatitud().doubleValue());
+                tramo.setDestinoLongitud(tramoTentativo.getDestinoLongitud().doubleValue());
+            }
             
             tramo.setCreatedAt(LocalDateTime.now());
             
             Tramo tramoGuardado = tramoRepository.save(tramo);
             tramosCreados.add(tramoGuardado);
             
-            log.debug("[CID={}] Tramo {} creado: {} → {} ({} km)", 
+            log.debug("[CID={}] Tramo {} creado: {} → {} ({} km, {} min estimados, inicio: {}, fin: {})", 
                     correlationId, tramoGuardado.getOrden(), 
                     tramoTentativo.getOrigenNombre(), tramoTentativo.getDestinoNombre(),
-                    tramoTentativo.getDistanciaKm());
+                    tramoTentativo.getDistanciaKm(), duracionMinutos,
+                    fechaInicioTramo, fechaFinTramo);
+            
+            // Calcular cuándo inicia el siguiente tramo (considerando estadía en depósitos)
+            fechaInicioTramo = fechaFinTramo;
+            
+            // Si este tramo termina en un depósito Y hay un tramo siguiente, agregar tiempo de estadía estimado
+            boolean terminaEnDeposito = "ORIGEN_DEPOSITO".equals(tramoTentativo.getTipo()) 
+                    || "DEPOSITO_DEPOSITO".equals(tramoTentativo.getTipo());
+            boolean hayTramoSiguiente = i < rutaTentativa.getTramos().size() - 1;
+            
+            if (terminaEnDeposito && hayTramoSiguiente) {
+                // Tiempo de estadía estimado: 24 horas por defecto (puede configurarse)
+                int horasEstadiaEstimada = 24;
+                fechaInicioTramo = fechaInicioTramo.plusHours(horasEstadiaEstimada);
+                
+                log.debug("[CID={}] Tramo {} termina en depósito - Agregando {} horas de estadía estimada. Siguiente tramo inicia: {}", 
+                        correlationId, tramoGuardado.getOrden(), horasEstadiaEstimada, fechaInicioTramo);
+            }
         }
 
         metricas.incrementarRutasCreadas();
@@ -153,12 +177,27 @@ public class RutaService {
         log.info("[CID={}] Ruta {} creada con {} tramos exitosamente", 
                 correlationId, rutaGuardada.getId(), tramosCreados.size());
 
-        // 3. Vincular la ruta con la solicitud en seguimiento-service
+        // 3. Vincular la ruta con la solicitud en seguimiento-service y actualizar costos/tiempos estimados
         if (solicitudId != null) {
             try {
                 seguimientoServiceClient.asignarRutaASolicitud(solicitudId, rutaGuardada.getId());
                 log.info("[CID={}] Solicitud {} vinculada con ruta {}", 
                         correlationId, solicitudId, rutaGuardada.getId());
+                
+                // Actualizar costos y tiempos estimados en la solicitud
+                try {
+                    seguimientoServiceClient.actualizarCostosYTiempoEstimados(
+                            solicitudId, 
+                            rutaTentativa.getCostoEstimadoTotal(), 
+                            rutaTentativa.getTiempoEstimadoTotalMinutos());
+                    log.info("[CID={}] Costos y tiempos estimados actualizados en solicitud {}: ${} - {} min", 
+                            correlationId, solicitudId, 
+                            rutaTentativa.getCostoEstimadoTotal(), 
+                            rutaTentativa.getTiempoEstimadoTotalMinutos());
+                } catch (Exception e) {
+                    log.warn("[CID={}] Error al actualizar costos/tiempos en solicitud {}: {}", 
+                            correlationId, solicitudId, e.getMessage());
+                }
             } catch (Exception e) {
                 log.error("[CID={}] Error al vincular solicitud {} con ruta {}: {}", 
                         correlationId, solicitudId, rutaGuardada.getId(), e.getMessage());
@@ -205,27 +244,6 @@ public class RutaService {
     }
 
     @Transactional
-    public RutaDTO actualizar(Long id, RutaDTO rutaDTO) {
-        String correlationId = MDC.get("correlationId");
-        log.debug("[CID={}] Actualizando ruta con ID: {}", correlationId, id);
-        
-        Ruta ruta = rutaRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", id));
-
-        ruta.setCantidadTramos(rutaDTO.getCantidadTramos());
-        ruta.setCantidadDepositos(rutaDTO.getCantidadDepositos());
-        ruta.setObservaciones(rutaDTO.getObservaciones());
-        
-        if (rutaDTO.getEstado() != null) {
-            ruta.setEstado(Ruta.EstadoRuta.valueOf(rutaDTO.getEstado()));
-        }
-
-        Ruta actualizada = rutaRepository.save(ruta);
-        log.info("[CID={}] Ruta actualizada exitosamente: {}", correlationId, id);
-        return convertirADTO(actualizada);
-    }
-
-    @Transactional
     public void cambiarEstado(Long id, String nuevoEstado) {
         String correlationId = MDC.get("correlationId");
         log.debug("[CID={}] Cambiando estado de ruta {} a: {}", correlationId, id, nuevoEstado);
@@ -250,20 +268,6 @@ public class RutaService {
             log.warn("[CID={}] Estado inválido proporcionado: {}", correlationId, nuevoEstado);
             throw new DatosInvalidosException("Estado inválido: " + nuevoEstado);
         }
-    }
-
-    @Transactional
-    public void eliminar(Long id) {
-        String correlationId = MDC.get("correlationId");
-        log.debug("[CID={}] Eliminando ruta con ID: {}", correlationId, id);
-        
-        if (!rutaRepository.existsById(id)) {
-            log.warn("[CID={}] Intento de eliminar ruta inexistente: {}", correlationId, id);
-            throw new RecursoNoEncontradoException("Ruta", id);
-        }
-        
-        rutaRepository.deleteById(id);
-        log.info("[CID={}] Ruta eliminada exitosamente: {}", correlationId, id);
     }
 
     /**
@@ -394,17 +398,5 @@ public class RutaService {
         dto.setObservaciones(ruta.getObservaciones());
         dto.setCreatedAt(ruta.getCreatedAt());
         return dto;
-    }
-
-    private Ruta convertirAEntidad(RutaDTO dto) {
-        Ruta ruta = new Ruta();
-        ruta.setId(dto.getId());
-        if (dto.getEstado() != null) {
-            ruta.setEstado(Ruta.EstadoRuta.valueOf(dto.getEstado()));
-        }
-        ruta.setCantidadTramos(dto.getCantidadTramos());
-        ruta.setCantidadDepositos(dto.getCantidadDepositos());
-        ruta.setObservaciones(dto.getObservaciones());
-        return ruta;
     }
 }

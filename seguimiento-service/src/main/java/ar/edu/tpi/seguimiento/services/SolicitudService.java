@@ -98,7 +98,7 @@ public class SolicitudService {
      */
     @Transactional
     public SolicitudDTO crearSolicitud(CrearSolicitudRequest request) {
-        // 1. Obtener o crear cliente
+        // 1. Validar o crear cliente
         Long clienteId = request.getClienteId();
         if (clienteId == null) {
             // Crear nuevo cliente
@@ -112,9 +112,15 @@ public class SolicitudService {
             nuevoCliente = clienteRepository.save(nuevoCliente);
             clienteId = nuevoCliente.getId();
             log.info("Nuevo cliente creado: {}", clienteId);
+        } else {
+            // Verificar que el cliente existe
+            if (!clienteRepository.existsById(clienteId)) {
+                throw new RecursoNoEncontradoException("Cliente", clienteId);
+            }
+            log.info("Usando cliente existente: {}", clienteId);
         }
 
-        // 2. Obtener o crear contenedor
+        // 2. Validar o crear contenedor
         Long contenedorId = request.getContenedorId();
         if (contenedorId == null) {
             // Crear nuevo contenedor
@@ -131,6 +137,12 @@ public class SolicitudService {
             nuevoContenedor = contenedorRepository.save(nuevoContenedor);
             contenedorId = nuevoContenedor.getId();
             log.info("Nuevo contenedor creado: {}", contenedorId);
+        } else {
+            // Verificar que el contenedor existe
+            if (!contenedorRepository.existsById(contenedorId)) {
+                throw new RecursoNoEncontradoException("Contenedor", contenedorId);
+            }
+            log.info("Usando contenedor existente: {}", contenedorId);
         }
 
         // 3. Validar que se proporcionaron las coordenadas de origen
@@ -316,6 +328,26 @@ public class SolicitudService {
         Solicitud actualizada = solicitudRepository.save(solicitud);
         log.info("✅ Solicitud {} actualizada - Costo final: {} | Tiempo real: {} min", 
                 id, costoFinal, tiempoRealMinutos);
+        
+        return convertirADTO(actualizada);
+    }
+
+    /**
+     * Actualiza el costo estimado y tiempo estimado de una solicitud
+     * Llamado por logistica-service al asignar una ruta con tramos
+     */
+    @Transactional
+    public SolicitudDTO actualizarCostosYTiempoEstimados(Long id, BigDecimal costoEstimado, Integer tiempoEstimadoMin) {
+        Solicitud solicitud = solicitudRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+
+        solicitud.setCostoEstimado(costoEstimado);
+        solicitud.setTiempoEstimadoMin(tiempoEstimadoMin);
+        solicitud.setUpdatedAt(LocalDateTime.now());
+
+        Solicitud actualizada = solicitudRepository.save(solicitud);
+        log.info("✅ Solicitud {} actualizada - Costo estimado: {} | Tiempo estimado: {} min", 
+                id, costoEstimado, tiempoEstimadoMin);
         
         return convertirADTO(actualizada);
     }
