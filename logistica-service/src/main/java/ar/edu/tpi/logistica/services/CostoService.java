@@ -183,10 +183,15 @@ public class CostoService {
             if (inicioRuta != null && finRuta != null) {
                 Duration duracionTotal = Duration.between(inicioRuta, finRuta);
                 tiempoRealTotal = (int) duracionTotal.toMinutes();
+                log.debug("[CID={}] Tiempo real calculado: {} min (desde {} hasta {})", 
+                        correlationId, tiempoRealTotal, inicioRuta, finRuta);
+            } else {
+                log.warn("[CID={}] No se pudo calcular tiempo real - inicioRuta: {}, finRuta: {}", 
+                        correlationId, inicioRuta, finRuta);
             }
 
-            log.info("[CID={}] Costo real calculado: Total={}, Km={}, Combustible={}, Estadías={}, Gestión={}", 
-                    correlationId, costoTotal, costoTotalKm, costoTotalCombustible, costoTotalEstadias, costoTotalGestion);
+            log.info("[CID={}] Costo real calculado: Total={}, Km={}, Combustible={}, Estadías={}, Gestión={}, TiempoReal={}min", 
+                    correlationId, costoTotal, costoTotalKm, costoTotalCombustible, costoTotalEstadias, costoTotalGestion, tiempoRealTotal);
 
             CostoRealDTO resultado = new CostoRealDTO(
                     costoTotal,

@@ -296,18 +296,30 @@ public class SolicitudService {
 
     /**
      * Asigna una ruta a una solicitud
-     * Llamado por logistica-service al crear una ruta
+     * Llamado por logistica-service cuando se crea una ruta
      */
     @Transactional
     public SolicitudDTO asignarRuta(Long solicitudId, Long rutaId) {
         Solicitud solicitud = solicitudRepository.findById(solicitudId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Solicitud", solicitudId));
 
+        String estadoAnterior = solicitud.getEstado();
+        
+        // Cerrar el estado actual en el historial
+        cerrarEstadoActual(solicitudId);
+        
         solicitud.setRutaId(rutaId);
+        solicitud.setEstado("PROGRAMADA"); // Cambiar estado de BORRADOR a PROGRAMADA
         solicitud.setUpdatedAt(LocalDateTime.now());
 
         Solicitud actualizada = solicitudRepository.save(solicitud);
-        log.info("✅ Solicitud {} vinculada con ruta {}", solicitudId, rutaId);
+        
+        // Registrar el nuevo estado en el historial
+        registrarCambioEstado(solicitudId, SolicitudCambioEstado.RequestStatus.PROGRAMADA,
+                "Ruta " + rutaId + " asignada - Estado cambiado de " + estadoAnterior + " a PROGRAMADA");
+        
+        log.info("✅ Solicitud {} vinculada con ruta {} - Estado: {} -> PROGRAMADA", 
+                solicitudId, rutaId, estadoAnterior);
         
         return convertirADTO(actualizada);
     }

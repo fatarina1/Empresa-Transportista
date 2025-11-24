@@ -66,7 +66,7 @@ public class SeguimientoServiceClient {
             );
             
             restClient.patch()
-                    .uri("/api/solicitudes/{id}/costos", solicitudId)
+                    .uri("/solicitudes/{id}/costos", solicitudId)
                     .body(request)
                     .retrieve()
                     .toBodilessEntity();
@@ -95,7 +95,7 @@ public class SeguimientoServiceClient {
             );
             
             restClient.patch()
-                    .uri("/api/solicitudes/{id}/costos-estimados", solicitudId)
+                    .uri("/solicitudes/{id}/costos-estimados", solicitudId)
                     .body(request)
                     .retrieve()
                     .toBodilessEntity();
@@ -166,7 +166,7 @@ public class SeguimientoServiceClient {
             Map<String, String> request = Map.of("estado", nuevoEstado);
             
             restClient.patch()
-                    .uri("/api/solicitudes/{id}/estado", solicitudId)
+                    .uri("/solicitudes/{id}/estado", solicitudId)
                     .body(request)
                     .retrieve()
                     .toBodilessEntity();
@@ -175,6 +175,7 @@ public class SeguimientoServiceClient {
             
         } catch (Exception e) {
             log.error("Error al actualizar estado de solicitud {}", solicitudId, e);
+            throw new RuntimeException("Error al actualizar estado de solicitud: " + e.getMessage());
         }
     }
 
