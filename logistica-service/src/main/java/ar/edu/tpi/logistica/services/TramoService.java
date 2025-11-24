@@ -134,7 +134,7 @@ public class TramoService {
             throw new ReglaNegocioException("El camión " + camion.getDominio() + " no está disponible");
         }
 
-        // 🔥 VALIDACIÓN DE CAPACIDAD: Obtener el contenedor de la solicitud
+        // VALIDACIÓN DE CAPACIDAD: Obtener el contenedor de la solicitud
         Ruta ruta = tramo.getRuta();
         if (ruta != null) {
             try {
@@ -183,7 +183,7 @@ public class TramoService {
             }
         }
 
-        // 🔥 VALIDACIÓN DE DISPONIBILIDAD: Verificar que no esté en otro tramo iniciado
+        //  VALIDACIÓN DE DISPONIBILIDAD: Verificar que no esté en otro tramo iniciado
         List<Tramo> tramosEnCurso = tramoRepository.findByCamionId(camionId).stream()
                 .filter(t -> t.getEstado() == Tramo.EstadoTramo.INICIADO)
                 .collect(Collectors.toList());
@@ -200,7 +200,7 @@ public class TramoService {
         tramo.setCamionId(camionId);
         tramo.setEstado(Tramo.EstadoTramo.ASIGNADO);
 
-        // 💰 CALCULAR COSTO APROXIMADO DEL TRAMO
+        //  CALCULAR COSTO APROXIMADO DEL TRAMO
         try {
             BigDecimal costoAproximadoTramo = costoService.calcularCostoAproximadoTramo(tramo);
             tramo.setCostoAproximado(costoAproximadoTramo.doubleValue());
@@ -250,7 +250,7 @@ public class TramoService {
         
         log.info("[CID={}] Tramo {} iniciado exitosamente a las {}", correlationId, tramoId, tramo.getFechaInicioReal());
 
-        // 🔥 ACTUALIZAR ESTADO DE SOLICITUD: Si es el primer tramo, cambiar a EN_TRANSITO
+        // ACTUALIZAR ESTADO DE SOLICITUD: Si es el primer tramo, cambiar a EN_TRANSITO
         Ruta ruta = tramo.getRuta();
         if (ruta != null) {
             try {
@@ -305,7 +305,7 @@ public class TramoService {
         long duracionMinutos = ChronoUnit.MINUTES.between(tramo.getFechaInicioReal(), fechaFin);
         log.debug("[CID={}] Tramo {} finalizado - Duración: {} minutos", correlationId, tramoId, duracionMinutos);
 
-        // 💰 CALCULAR COSTO REAL DEL TRAMO INDIVIDUAL
+        //  CALCULAR COSTO REAL DEL TRAMO INDIVIDUAL
         try {
             BigDecimal costoRealTramo = costoService.calcularCostoRealTramo(tramo);
             tramo.setCostoReal(costoRealTramo.doubleValue());

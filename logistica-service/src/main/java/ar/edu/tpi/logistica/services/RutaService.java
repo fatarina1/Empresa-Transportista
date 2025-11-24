@@ -93,7 +93,11 @@ public class RutaService {
 
         // 1. Crear la ruta
         Ruta ruta = new Ruta();
-        ruta.setEstado(Ruta.EstadoRuta.PROPUESTA);
+        
+        // Si la ruta se crea para una solicitud específica, está ASIGNADA directamente
+        // Si NO tiene solicitudId, es una ruta PROPUESTA (exploración, "qué pasaría si")
+        ruta.setEstado(solicitudId != null ? Ruta.EstadoRuta.ASIGNADA : Ruta.EstadoRuta.PROPUESTA);
+        
         ruta.setCantidadTramos(rutaTentativa.getCantidadTramos());
         ruta.setCantidadDepositos(rutaTentativa.getCantidadDepositos());
         ruta.setObservaciones(observaciones);

@@ -405,6 +405,18 @@ public class SolicitudService {
         dto.setTiempoRealMin(solicitud.getTiempoRealMin());
         dto.setFechaSolicitud(solicitud.getFechaSolicitud());
         dto.setFechaEntrega(solicitud.getFechaEntrega());
+        
+        // Obtener ubicaciones completas del servicio de logística
+        try {
+            UbicacionDTO origen = logisticaClient.obtenerUbicacion(solicitud.getOrigenId());
+            UbicacionDTO destino = logisticaClient.obtenerUbicacion(solicitud.getDestinoId());
+            dto.setOrigen(origen);
+            dto.setDestino(destino);
+        } catch (Exception e) {
+            log.warn("No se pudieron obtener ubicaciones para solicitud {}: {}", solicitud.getId(), e.getMessage());
+            // Los IDs siguen estando disponibles como fallback
+        }
+        
         return dto;
     }
 
